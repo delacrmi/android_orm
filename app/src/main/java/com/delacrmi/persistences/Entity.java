@@ -80,21 +80,25 @@ public class Entity implements Serializable {
     public String getCreateString() throws Exception{
         setPropertyTable();
         int count = 1;
-        String create = "create table "+property.getTableName()+"(";
+        String create = "";
 
         for(String key : property.getFieldMap().keySet()){
             Field field = property.getFieldMap().get(key);
 
-            try {
-                Column column = property.getColumnMap().get(key);
-                String t  = " " + convertToDBType(field.getType().getSimpleName());
-                create += key + t;
+            Column column = property.getColumnMap().get(key);
 
-                if(column.PrimaryKey() &&
-                        (column.AutoIncrement() || column.WritePrimaryKey())) create += " PRIMARY KEY";
-                //if(column.AutoIncrement()) create += " autoincrement";
-                if(column.NotNull() ||
-                        (column.PrimaryKey() && !column.AutoIncrement() && !column.WritePrimaryKey())) create += " not null";
+            try {
+
+                String t  = " " + convertToDBType(field.getType().getSimpleName());
+
+
+                if(column.PrimaryKey() && column.AutoIncrement())
+                    create = key + t + " primary key autoincrement, " +create;
+                else
+                    create += key + t;
+
+                if((column.NotNull() ||
+                        column.PrimaryKey()) && !column.AutoIncrement()) create += " not null";
 
             } catch (Exception e) {
 
@@ -111,14 +115,16 @@ public class Entity implements Serializable {
                 }else throw new Exception("The column " + key + "need a relationship annotation type");
             }
 
-            if(count < property.getFieldMap().size()){
-                create  += ",";
-                count++;
-            }
+            count ++;
+            if(count <= property.getFieldMap().size()){
+                if(!column.AutoIncrement())
+                    create  += ", ";
+            }else if(column.AutoIncrement())
+                create = create.substring(0,create.length()-2);
         }
 
-        create += ")";
-        return create;
+        create = "create table "+property.getTableName()+"(" + create + ")";
+        return create.toUpperCase();
     }
 
     private String getColumnByRelation(Entity entity, String key) throws Exception{
@@ -452,20 +458,21 @@ public class Entity implements Serializable {
 
     public void setContentValue(ContentValues content, String key, Object value, boolean check) throws NullPointerException{
         setPropertyTable();
+        Column column = property.getColumnMap().get(key);
 
         if(check){
-            Column column = property.getColumnMap().get(key);
             if((column.NotNull() || (column.PrimaryKey() && !column.AutoIncrement()))
                     && value == null) throw new NullPointerException("The column " + key + " can't be null");
         }
 
 
-        if(value != null) Log.i("Class "+key, value.getClass().getSimpleName());
+        if(value != null) Log.i("Class " + key, value+"");
         if(value != null && value.getClass().getSimpleName().equals("Text"))
             Log.d("Super", value.getClass().getSuperclass().getSimpleName());
 
-        if(value == null){}
-        else if(value.getClass().getSimpleName().equals("Integer") ||
+        if(value == null || (value instanceof Integer && (Integer)value == 0)) {
+            if (column.AutoIncrement()) content.putNull(key);
+        }else if(value.getClass().getSimpleName().equals("Integer") ||
                 value.getClass().getSimpleName().equals("int")) content.put(key, (Integer)value);
         else if(value.getClass().getSimpleName().equals("String")) content.put(key,(String)value);
         else if(value.getClass().getSimpleName().equals("Long")) content.put(key,(Long)value);
@@ -553,7 +560,9 @@ public class Entity implements Serializable {
         switch (type){
             case "String": value = "text";
                 break;
-            case "int": value = "integer";
+            case "int": value = "INTEGER";
+                break;
+            case "Integer": value = "INTEGER";
                 break;
             case "BigDecimal": value = "real";
                 break;

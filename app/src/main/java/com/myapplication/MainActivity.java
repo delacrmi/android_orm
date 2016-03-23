@@ -76,14 +76,14 @@ public class MainActivity extends AppCompatActivity {
                 .addEntity(Text2.class).init();
 
         Text text = new Text();
-        text.user = "other";
+        text.user = "0";
         text.save();
         /*EntityFilter filter = new EntityFilter("?");
         filter//.addArgument("usuario", "Miguel", null)
         .addArgument("u", "l%", "like");
 
         text.findOnce(filter);*/
-        Log.d("Text", "user: " + text.user + " text: " + text.e /*+ " text: " + text.text2.e + " password: " + text.getPassword()*/);
+        Log.d("Text", "user: " + text.user + " pk: " + text.e /*+ " text: " + text.text2.e + " password: " + text.getPassword()*/);
 
         /*try {
             Users.class.getMethod("getCreateString", null).invoke(Users.class.newInstance(),null);

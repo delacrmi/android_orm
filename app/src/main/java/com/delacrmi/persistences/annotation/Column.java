@@ -17,8 +17,6 @@ public @interface Column {
 
     boolean PrimaryKey() default false;
 
-    boolean WritePrimaryKey() default false;
-
     boolean AutoIncrement() default false;
 
     boolean NotNull() default false;
