@@ -76,14 +76,20 @@ public class MainActivity extends AppCompatActivity {
                 .addEntity(Text2.class).init();
 
         Text text = new Text();
+        Text t = new Text();
         text.user = "0";
         text.save();
-        /*EntityFilter filter = new EntityFilter("?");
+        EntityFilter filter = new EntityFilter("?");
         filter//.addArgument("usuario", "Miguel", null)
-        .addArgument("u", "l%", "like");
+        .addArgument("e", "2", null);
 
-        text.findOnce(filter);*/
-        Log.d("Text", "user: " + text.user + " pk: " + text.e /*+ " text: " + text.text2.e + " password: " + text.getPassword()*/);
+        text.findOnce(filter);
+
+        filter = new EntityFilter("?");
+        filter.addArgument("e","1", null);
+        t.findOnce(filter);
+
+        Log.d("Text", "user: " + text.user + " pk: " + text.e + " user: " + t.user + " pk: " + t.e /*+ " text: " + text.text2.e + " password: " + text.getPassword()*/);
 
         /*try {
             Users.class.getMethod("getCreateString", null).invoke(Users.class.newInstance(),null);

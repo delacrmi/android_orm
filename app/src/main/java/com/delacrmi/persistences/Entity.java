@@ -124,7 +124,7 @@ public class Entity implements Serializable {
         }
 
         create = "create table "+property.getTableName()+"(" + create + ")";
-        return create.toUpperCase();
+        return create;
     }
 
     private String getColumnByRelation(Entity entity, String key) throws Exception{
@@ -299,50 +299,6 @@ public class Entity implements Serializable {
             try {
                 Field field = property.getFieldMap().get(column);
                 field.setAccessible(true);
-
-                /*try{
-                    if (property.getRelationships().get(column) != null){
-
-                        String n = null;
-                        int count = 1;
-                        String[] v = null;
-                        int length = property.getPrimaryKeyMap().size();
-
-                        if (length > 0) {
-                            n = "";
-                            v = new String[length];
-                        }
-
-                        for (String key : property.getPrimaryKeyMap().keySet()) {
-                            if(convertRelationshipToString(property.getRelationships().get(column))
-                                    .equals(""))
-                                n += property.getTableName() + "_" + key;
-                            else
-                                n += property.getTableName() + "_" +
-                                        convertRelationshipToString(property.getRelationships().get(column));
-
-                            Field ele = property.getFieldMap().get(key);
-                            if (ele.getType().getSimpleName().equals("Date")) {
-                                if (v != null)
-                                    v[count - 1] = ((Date) ele.get(this)).getTime() + "";
-
-                            } else if (v != null) v[count - 1] = ele.get(this) + "";
-
-                            if(count < length) n += ",";
-                        }
-
-                        if(field.getType().getSimpleName().equals("List")){
-                            value = getList(field);
-                        }else if (field.getType().getSuperclass().isInstance(new Entity())) {
-                            value = ((Entity)field.getType()
-                                    .newInstance()).findOnce(null);
-                        }
-                    }
-                } catch (InstantiationException e) {
-                    throw new InstantiationException("The type of " + column +
-                            " column isn't instance of Entity class");
-                }*/
-
                 //TODO Check the Date and others conversions type
                 field.set(this, value);
 
@@ -641,7 +597,7 @@ public class Entity implements Serializable {
                 String columnName = cursor.getColumnName(index);
                 int col = cursor.getColumnIndex(columnName);
                 try {
-                    //Log.d("Add Values",columnName+" value "+cursor.getString(col));
+                    Log.d("Add Values",columnName+" value "+cursor.getString(col));
                     Object o = convertToFieldType(columnName, cursor.getString(col));
                     if(!property.getRelationships().containsKey(columnName))
                         setColumn(columnName, o);
@@ -659,6 +615,24 @@ public class Entity implements Serializable {
                 }
             }
         }
+    }
+
+    private void resetEntity() {
+        try {
+            for(String key: property.getFieldMap().keySet()){
+                Field field = property.getFieldMap().get(key);
+                if(field.getType().getSimpleName().equals("int") ||
+                        field.getType().getSimpleName().equals("Integer"))
+                    setColumn(key, new Integer(0));
+                else
+                    setColumn(key, null);
+            }
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        }
+
     }
 
     //region Persistences Methods
@@ -679,8 +653,11 @@ public class Entity implements Serializable {
         try{
             Cursor cursor = manager.read().rawQuery(sql, arg);
 
-            if(cursor != null && cursor.moveToFirst()) addValues(cursor,null);
-            setEntityColumn(this);
+            if(cursor != null && cursor.moveToFirst()){
+                addValues(cursor,null);
+                setEntityColumn(this);
+            }else resetEntity();
+
             return this;
         }finally {
             manager.close();
@@ -698,7 +675,10 @@ public class Entity implements Serializable {
 
         Cursor cursor = manager.read().rawQuery(sql, arg);
 
-        if(cursor != null && cursor.moveToFirst()) addValues(cursor, obj);
+        if(cursor != null && cursor.moveToFirst()){
+            addValues(cursor,obj);
+            setEntityColumn(this);
+        }else resetEntity();
     }
 
     public List<Entity> find(EntityFilter filter){
