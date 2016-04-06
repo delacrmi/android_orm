@@ -42,8 +42,8 @@ public class EntityProperty {
 
     private void setTableName(){
         Table table = tableClass.getAnnotation(Table.class);
-        if(table.Name().equals("")) tableName = getClass().getSimpleName();
-        else tableName = table.Name();
+        if(table.Name().equals("")) tableName = getClass().getSimpleName().toUpperCase();
+        else tableName = table.Name().toUpperCase();
 
         if(table.NickName().equals("")) nickName = getClass().getSimpleName();
         else nickName = table.NickName();
@@ -66,8 +66,8 @@ public class EntityProperty {
             if(column != null){
                 Column c = (Column) column;
                 String name;
-                if(c.Name().equals("")) name = field.getName();
-                else name = c.Name();
+                if(c.Name().equals("")) name = field.getName().toUpperCase();
+                else name = c.Name().toUpperCase();
 
                 if(columnMap.containsKey(name))
                     throw new Error("The column name <" + name + "> is duplicated");

@@ -124,7 +124,7 @@ public class Entity implements Serializable {
         }
 
         create = "create table "+property.getTableName()+"(" + create + ")";
-        return create;
+        return create.toUpperCase();
     }
 
     private String getColumnByRelation(Entity entity, String key) throws Exception{
@@ -594,7 +594,7 @@ public class Entity implements Serializable {
     private void addValues(Cursor cursor, Entity ob){
         if(cursor != null){
             for (int index = 0; index < cursor.getColumnNames().length; index++){
-                String columnName = cursor.getColumnName(index);
+                String columnName = cursor.getColumnName(index).toUpperCase();
                 int col = cursor.getColumnIndex(columnName);
                 try {
                     Log.d("Add Values",columnName+" value "+cursor.getString(col));
@@ -642,7 +642,7 @@ public class Entity implements Serializable {
 
         String sql = "select * from "+getName();
         if(filter != null){
-            sql += " where " + filter.getWhereValue() +" ";
+            sql += " where " + filter.getWhereValue().toUpperCase() +" ";
             arg = filter.getArgumentValue();
         }
 

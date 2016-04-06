@@ -14,4 +14,5 @@ import java.lang.annotation.Target;
 public @interface OneToOne {
     String[] ForeingKey() default {};
     boolean Create() default true;
+    String FieldName() default "";
 }
