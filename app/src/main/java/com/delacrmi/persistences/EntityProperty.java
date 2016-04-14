@@ -5,7 +5,6 @@ package com.delacrmi.persistences;
  */
 
 import com.delacrmi.persistences.annotation.Column;
-import com.delacrmi.persistences.annotation.ManyToMany;
 import com.delacrmi.persistences.annotation.ManyToOne;
 import com.delacrmi.persistences.annotation.OneToMany;
 import com.delacrmi.persistences.annotation.OneToOne;
@@ -17,9 +16,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-public class EntityProperty {
+class EntityProperty {
 
     private Class<? extends Entity> tableClass;
     private String tableName;
@@ -79,8 +77,7 @@ public class EntityProperty {
                 //Adding the annotations properties for field
                 Annotation[] annotations = field.getAnnotations();
                 for(Annotation annotation : annotations)
-                    if (annotation instanceof ManyToMany ||
-                            annotation instanceof OneToMany ||
+                    if (annotation instanceof OneToMany ||
                             annotation instanceof ManyToOne ||
                             annotation instanceof OneToOne) {
                         if(field.getType().isInstance(new Entity()) ||
@@ -123,15 +120,29 @@ public class EntityProperty {
     }
     public Class<? extends Entity> getTableClass(){ return tableClass; }
 
-    public class AnnotationType<Key, Value, IsEntity> {
-       private Map<Key, Value> valueMap = new HashMap<>();
-       private Map<Key, IsEntity> isEntityType = new HashMap<>();
-       private List<Key> keys = new ArrayList<>();
+    class AnnotationType<Key, Value, IsEntity> {
+        private Map<Key, Value> valueMap = new HashMap<>();
+        private Map<Key, IsEntity> isEntityType = new HashMap<>();
+        private List<Key> keys = new ArrayList<>();
+        private Map<Key,Boolean> isEnableToCreate = new HashMap<>();
+        private Map<Key,String> tableName = new HashMap<>();
 
         public void put(Key key, Value value, IsEntity isEntity){
             keys.add(key);
             valueMap.put(key, value);
             isEntityType.put(key, isEntity);
+
+            if(value instanceof OneToOne)
+                setProperties(key, ((OneToOne)value).Create(),((OneToOne)value).TableName());
+            else if(value instanceof ManyToOne)
+                setProperties(key, true,((ManyToOne)value).TableName());
+            else if(value instanceof OneToMany)
+                setProperties(key, false,((OneToMany)value).TableName());
+        }
+
+        private void setProperties(Key key, Boolean create, String table){
+            isEnableToCreate.put(key,create);
+            tableName.put(key,table);
         }
 
         public Map<Key, Value> getValuesMap(){
@@ -144,6 +155,14 @@ public class EntityProperty {
 
         public List<Key> getKeysList(){
             return keys;
+        }
+
+        public Map<Key,Boolean> getIsEnableToCreate(){
+            return isEnableToCreate;
+        }
+
+        public Map<Key,String> getTableName(){
+            return tableName;
         }
 
     }

@@ -1,6 +1,7 @@
 package com.delacrmi.myapplication;
 
 import android.content.Context;
+import android.provider.Settings;
 import android.util.Log;
 
 import com.delacrmi.persistences.EntityManager;
@@ -53,10 +54,8 @@ public class ExampleUnitTest {
     @Test
     public void createString() throws  Exception{
         Text text = new Text();
-        text.e = 1;
-        assertEquals("We speck CREATE TABLE TEXT(E INTEGER PRIMARY KEY AUTOINCREMENT, U TEXT NOT NULL, CONTRASENA TEXT) "+
-                "and have "+text.getCreateString(),
-                "CREATE TABLE TEXT(E INTEGER PRIMARY KEY AUTOINCREMENT, U TEXT NOT NULL, CONTRASENA TEXT)",
+        assertEquals("Error in the create table string",
+                "CREATE TABLE TEXT(E INTEGER PRIMARY KEY AUTOINCREMENT, CONTRASENA TEXT, U TEXT NOT NULL)",
                 text.getCreateString());
     }
 }

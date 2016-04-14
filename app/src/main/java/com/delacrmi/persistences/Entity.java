@@ -31,6 +31,7 @@ import java.util.Set;
 import java.lang.reflect.Type;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
+import java.util.Vector;
 
 /**
  * Created by miguel on 09/10/15.
@@ -142,7 +143,7 @@ public class Entity implements Serializable {
                 for (String one : ann){
                     try{
                         columns += ent.getName() + "_" + one + " " + convertToDBType(ent.getFieldsPrimariesKey()
-                                .get(one).getType().getSimpleName());
+                                .get(one.toUpperCase()).getType().getSimpleName());
                     }catch (NullPointerException n){
                         throw new Exception("The column " + one + " isn't a Primary key");
                     }
@@ -617,6 +618,28 @@ public class Entity implements Serializable {
         }
     }
 
+    private void addValues(List<ColumnClass> temporary, Entity ob){
+        for (ColumnClass column : temporary){
+            String columnName = column.name.toUpperCase();
+            try {
+                Log.d("Add Values",columnName+" value "+column.value);
+                Object o = convertToFieldType(columnName, column.value);
+                if(!property.getRelationships().containsKey(columnName))
+                    setColumn(columnName, o);
+                else if (ob != null)
+                    setColumn(columnName, ob);
+            } catch (NoSuchFieldException e) {
+                //Log.d("Entity",columnName);
+                entityRelationMap.put(columnName, column.value);
+            } catch (InstantiationException e){
+                e.printStackTrace();
+            }
+        }
+
+        setEntityColumn(this);
+
+    }
+
     private void resetEntity() {
         try {
             for(String key: property.getFieldMap().keySet()){
@@ -632,97 +655,107 @@ public class Entity implements Serializable {
         } catch (InstantiationException e) {
             e.printStackTrace();
         }
-
     }
 
     //region Persistences Methods
     public synchronized Entity findOnce(EntityFilter filter){
-        setPropertyTable();
-        String[] arg = null;
-
-        String sql = "select * from "+getName();
-        if(filter != null){
-            sql += " where " + filter.getWhereValue().toUpperCase() +" ";
-            arg = filter.getArgumentValue();
+        Temporary t = getTemporaryStructure(filter,getName(),1);
+        if(t.next()){
+            addValues(t.getRowAt(),null);
         }
-
-        Log.d("SQL", sql);
-        for(String value : arg)
-            Log.d("value",value);
-
-        try{
-            Cursor cursor = manager.read().rawQuery(sql, arg);
-
-            if(cursor != null && cursor.moveToFirst()){
-                addValues(cursor,null);
-                setEntityColumn(this);
-            }else resetEntity();
-
-            return this;
-        }finally {
-            manager.close();
-        }
+        return this;
     }
 
     private void findOnce(EntityFilter filter, Entity obj){
-        String[] arg = null;
-
-        String sql = "select * from "+getName();
-        if(filter != null){
-            sql += " where " + filter.getWhereValue() +" ";
-            arg = filter.getArgumentValue();
+        Temporary t = getTemporaryStructure(filter,getName(),1);
+        if(t.next()){
+            addValues(t.getRowAt(),null);
         }
-
-        Cursor cursor = manager.read().rawQuery(sql, arg);
-
-        if(cursor != null && cursor.moveToFirst()){
-            addValues(cursor,obj);
-            setEntityColumn(this);
-        }else resetEntity();
     }
 
     public List<Entity> find(EntityFilter filter){
         //TODO create the code to find a list entity object
         setPropertyTable();
 
-        List<Entity> entities = null;
+        List<Entity> entities =  new ArrayList();
+        Temporary t = getTemporaryStructure(filter,getName(),0);
+
+        while (t.next()){
+            try {
+                Entity entity = getClass().newInstance();
+                entity.addValues(t.getRowAt(),null);
+                entities.add(entity);
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+
+        }
+
+        return entities;
+    }
+
+    private Temporary getTemporaryStructure(EntityFilter filter, String name, int limit){
+        setPropertyTable();
+
+        if(limit == 1)
+            resetEntity();
+
+        Temporary t = new Temporary();
 
         try{
-            Log.i("Where",filter.getWhereValue());
+            /*Log.i("Where",filter.getWhereValue());
             for(String i : filter.getArgumentValue())
-                Log.i("Value",i);
+                Log.i("Value",i);*/
 
-            Entity entity;
-            String sql = "select "+getColumnsNameAsString(true)+" from "+getName();
+            String sql = ("select "+getColumnsNameAsString(true)+" from "+name).toUpperCase();
             String[] arg = null;
 
             if(filter != null){
-                sql += " where " + filter.getWhereValue() +" ";
+                sql += (" where " + filter.getWhereValue() +" ").toUpperCase();
                 arg = filter.getArgumentValue();
             }
 
+//            Log.i("SQL",sql);
+
             Cursor cursor = manager.read().rawQuery(sql,arg);
             if(cursor != null && cursor.moveToFirst()){
-                entities = new ArrayList();
-                try {
-                    do{
-                        entity = getClass().newInstance();
-                        entity.addValues(cursor,null);
-                        entities.add(entity);
-                    }while (cursor.moveToNext());
+                do{
+                    List<ColumnClass> row = new Vector<>();
+                    for (int index = 0; index < cursor.getColumnNames().length; index++){
+                        String columnName = cursor.getColumnName(index).toUpperCase();
+                        int col = cursor.getColumnIndex(columnName);
 
-                } catch (InstantiationException e) {
-                    e.printStackTrace();
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                }
+                        String v = cursor.getString(cursor.getColumnIndex(columnName));
+
+                        if(v != null){
+                            ColumnClass c = new ColumnClass();
+                            c.name = columnName;
+                            c.type = cursor.getType(col);
+                            c.value = cursor.getString(col);
+
+                            row.add( c);
+//                            Log.i(columnName,cursor.getString(cursor.getColumnIndex(columnName)));
+                        }/*else{
+                            Log.i(columnName,"null");
+                        }*/
+
+                    }
+
+                    t.add(row);
+
+                    if(t.getCountRows() == limit && limit > 0)
+                        break;
+
+                }while (cursor.moveToNext());
 
             }
         }finally {
             manager.close();
         }
 
-        return entities;
+        return t;
     }
 
     private List<Entity> find(EntityFilter filter, Entity master){
@@ -737,11 +770,11 @@ public class Entity implements Serializable {
                 Log.i("Value",i);
 
             Entity entity;
-            String sql = "select "+getColumnsNameAsString(true)+" from "+getName();
+            String sql = ("select "+getColumnsNameAsString(true)+" from "+getName()).toUpperCase();
             String[] arg = null;
 
             if(filter != null){
-                sql += " where " + filter.getWhereValue() +" ";
+                sql += (" where " + filter.getWhereValue() +" ").toUpperCase();
                 arg = filter.getArgumentValue();
             }
 
@@ -823,6 +856,8 @@ public class Entity implements Serializable {
         String values = "";
         for (String key : property.getPrimaryKeyMap().keySet()){
             Object v = getColumnValue(key);
+            if(!values.equals(""))
+                values += ", ";
             if(v != null)
                 values += key+":"+v;
         }
