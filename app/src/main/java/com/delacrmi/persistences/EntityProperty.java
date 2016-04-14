@@ -21,15 +21,14 @@ class EntityProperty {
 
     private Class<? extends Entity> tableClass;
     private String tableName;
+    private String[] polymorphism;
     private String nickName;
     private Map<String,Field> fieldMap = new HashMap();
     private Map<String,Column> columnMap = new HashMap();
     private Map<String,Column> primaryKey = new HashMap();
     private AnnotationType<String, Annotation, Boolean> relationship = new AnnotationType();
     private Map<String, String[]> tableTriggers = new HashMap();
-    //private List<String> relationshipName = new ArrayList<>();
-
-
+    
     public EntityProperty(Class<? extends Entity> tableClass){
 
         this.tableClass = tableClass;
@@ -45,6 +44,8 @@ class EntityProperty {
 
         if(table.NickName().equals("")) nickName = getClass().getSimpleName();
         else nickName = table.NickName();
+        
+        polymorphism = table.Polymorphism();
 
         tableTriggers.put("before", table.BeforeToCreate());
         tableTriggers.put("after", table.AfterToCreated());
@@ -118,9 +119,11 @@ class EntityProperty {
     public String getNickName() {
         return nickName;
     }
+    public String[] getPolymorphism(){ return polymorphism; }
     public Class<? extends Entity> getTableClass(){ return tableClass; }
 
     class AnnotationType<Key, Value, IsEntity> {
+        
         private Map<Key, Value> valueMap = new HashMap<>();
         private Map<Key, IsEntity> isEntityType = new HashMap<>();
         private List<Key> keys = new ArrayList<>();
