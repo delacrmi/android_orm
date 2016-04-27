@@ -80,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
         Text text = new Text();
         Text t = new Text();
         text.user = "0";
-        text.save();
+        //text.save();
         EntityFilter filter = new EntityFilter("?");
         filter//.addArgument("usuario", "Miguel", null)
         .addArgument("e", "2", null);
@@ -91,8 +91,20 @@ public class MainActivity extends AppCompatActivity {
         filter.addArgument("e","1", null);
         t.findOnce(filter);
 
-        Log.d("Text", "user: " + text.user + " pk: " + text.e + " user: " + t.user + " pk: " + t.e /*+ " text: " + text.text2.e + " password: " + text.getPassword()*/);
+        Users user = new Users();
+        filter = new EntityFilter("?");
+        filter.addArgument("id","1",null);
+        user.findOnce(filter);
 
+        /*user.user = "Miguel";
+        user.setPassword("1234");
+        user.email = "delacrmi@gmail.com";
+        user.role = "admin";
+        user.text = t;
+        user.save();*/
+
+        Log.d("Text", "user: " + text.user + " pk: " + text.e + " user: " + t.user + " pk: " + t.e /*+ " text: " + text.text2.e + " password: " + text.getPassword()*/);
+        Log.d("User "+user,"test.user "+user.text.user);
         /*try {
             Users.class.getMethod("getCreateString", null).invoke(Users.class.newInstance(),null);
         } catch (IllegalAccessException e) {

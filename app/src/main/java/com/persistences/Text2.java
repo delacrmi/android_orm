@@ -27,6 +27,6 @@ public class Text2 extends Entity {
     public int e;
 
     @Column
-    @OneToMany
+    @OneToMany(ForeingKey = {"id"})
     public Users us;
 }

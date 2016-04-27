@@ -4,6 +4,8 @@ package com.delacrmi.persistences;
  * Created by miguel on 01/02/16.
  */
 
+import android.support.annotation.Nullable;
+
 import com.delacrmi.persistences.annotation.Column;
 import com.delacrmi.persistences.annotation.ManyToOne;
 import com.delacrmi.persistences.annotation.OneToMany;
@@ -12,6 +14,8 @@ import com.delacrmi.persistences.annotation.Table;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -33,22 +37,33 @@ class EntityProperty {
     public EntityProperty(Class<? extends Entity> tableClass){
 
         this.tableClass = tableClass;
-        setTableName();
+        Table table = tableClass.getAnnotation(Table.class);
+
+        tableName =  setTableName(this.tableClass);
+        setNickName(table);
+        setMethods(table);
+
         setElementsProperties();
 
     }
 
-    private void setTableName(){
-        Table table = tableClass.getAnnotation(Table.class);
-        if(table.Name().equals("")) tableName = getClass().getSimpleName().toUpperCase();
-        else tableName = table.Name().toUpperCase();
+    private String setTableName(Class<? extends Entity> tableClass){
 
+        Table table = tableClass.getAnnotation(Table.class);
+
+        if(table.Name().equals("")) return getClass().getSimpleName().toUpperCase();
+        else return table.Name().toUpperCase();
+
+    }
+
+    private void setNickName(Table table){
         if(table.NickName().equals("")) nickName = getClass().getSimpleName();
         else nickName = table.NickName();
+    }
 
+    private void setMethods(Table table){
         tableTriggers.put("before", table.BeforeToCreate());
         tableTriggers.put("after", table.AfterToCreated());
-
     }
 
     public Table getTableAnnotation(){
@@ -111,6 +126,9 @@ class EntityProperty {
     public Map<String, Boolean>isEntityMap(){
         return relationship.isEntityType;
     }
+    public boolean isRelationshipWriteble(String field){
+        return relationship.getIsEnableToCreate().get(field);
+    }
 
     public String getTableName() {
         return tableName;
@@ -133,11 +151,14 @@ class EntityProperty {
             isEntityType.put(key, isEntity);
 
             if(value instanceof OneToOne)
-                setProperties(key, ((OneToOne)value).Create(),((OneToOne)value).TableName());
+                setProperties(key, ((OneToOne)value).Create(),
+                        setTableName(getEntityClassFromType(getFieldMap().get(key))));
             else if(value instanceof ManyToOne)
-                setProperties(key, true,((ManyToOne)value).TableName());
+                setProperties(key, true,
+                        setTableName(getEntityClassFromType(getFieldMap().get(key))));
             else if(value instanceof OneToMany)
-                setProperties(key, false,((OneToMany)value).TableName());
+                setProperties(key, false,
+                        setTableName(getEntityClassFromType(getFieldMap().get(key))));
         }
 
         private void setProperties(Key key, Boolean create, String table){
@@ -165,6 +186,25 @@ class EntityProperty {
             return tableName;
         }
 
+    }
+
+    @Nullable
+    public Class<? extends Entity> getEntityClassFromType(Field field){
+        Class value = null;
+        if(field.getType().getSimpleName().equals("List")){
+            Type genericFieldType = field.getGenericType();
+            if(genericFieldType instanceof ParameterizedType){
+                ParameterizedType aType = (ParameterizedType) genericFieldType;
+                Type[] fieldArgTypes = aType.getActualTypeArguments();
+                for(Type fieldArgType : fieldArgTypes){
+                    value = (Class) fieldArgType;
+                    break;
+                }
+            }
+        }else if (field.getType().getSuperclass().isInstance(new Entity())) {
+            value = field.getType();
+        }
+        return value;
     }
 
 }

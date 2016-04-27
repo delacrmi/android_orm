@@ -53,6 +53,8 @@ public class ExampleUnitTest {
 
     @Test
     public void createString() throws  Exception{
+        Users u = new Users();
+        System.out.println(u.getCreateString());
         Text text = new Text();
         assertEquals("Error in the create table string",
                 "CREATE TABLE TEXT(E INTEGER PRIMARY KEY AUTOINCREMENT, CONTRASENA TEXT, U TEXT NOT NULL)",
