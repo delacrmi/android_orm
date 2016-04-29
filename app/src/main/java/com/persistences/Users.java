@@ -33,12 +33,12 @@ public class Users extends Entity {
     public String role;
 
     @Column
-    @OneToOne(ForeingKey = {"u","e"})
+    @ManyToOne(ForeingKey = {"u","e"})
     public Text text;
 
     @Column
     @OneToOne(ForeingKey = {"u"})
-    public Text2 text2;
+    public Text text2;
 
     @Column(PrimaryKey = true,
             AutoIncrement = true)

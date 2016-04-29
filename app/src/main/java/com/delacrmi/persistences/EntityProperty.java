@@ -125,7 +125,7 @@ class EntityProperty {
     public Map<String, Boolean>isEntityMap(){
         return relationship.isEntityType;
     }
-    public boolean isRelationshipWriteble(String field){
+    public boolean isRelationshipWritable(String field){
         return relationship.getIsEnableToCreate().get(field);
     }
 

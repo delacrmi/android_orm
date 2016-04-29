@@ -8,27 +8,18 @@ import java.util.Map;
 /**
  * Created by miguel on 17/02/16.
  */
-public abstract class Filter<Column, Value, Comparison, Where> {
+abstract class Filter<Column, Value, Comparison, Condition> {
     private List<Column> nameList = new ArrayList<>();
     private Map<Column,Value> columnMap = new HashMap();
-    private Map<Column, Where> conditionMap = new HashMap();
+    private Map<Column, Condition> conditionMap = new HashMap();
     private Map<Column, Comparison> comparisonMap = new HashMap();
 
-    public Filter<Column, Value, Comparison, Where>
-        addArgument(Column column, Value value, Comparison comparison, Where where){
+    public Filter<Column, Value, Comparison, Condition>
+        addArgument(Column column, Value value, Comparison comparison, Condition condition){
         nameList.add(column);
         columnMap.put(column,value);
         comparisonMap.put(column, comparison);
-        conditionMap.put(column,where);
-        return this;
-    }
-
-    public Filter<Column, Value, Comparison, Where>
-    addArgument(Column column, Value value, Comparison comparison){
-        nameList.add(column);
-        columnMap.put(column,value);
-        comparisonMap.put(column, comparison);
-        conditionMap.put(column,null);
+        conditionMap.put(column, condition);
         return this;
     }
 
@@ -44,7 +35,7 @@ public abstract class Filter<Column, Value, Comparison, Where> {
         return comparisonMap;
     }
 
-    public Map<Column, Where> getConditionMap() {
+    public Map<Column, Condition> getConditionMap() {
         return conditionMap;
     }
 

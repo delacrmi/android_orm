@@ -8,7 +8,6 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.delacrmi.persistences.annotation.Column;
-import com.delacrmi.persistences.annotation.ManyToMany;
 import com.delacrmi.persistences.annotation.ManyToOne;
 import com.delacrmi.persistences.annotation.OneToMany;
 import com.delacrmi.persistences.annotation.OneToOne;
@@ -113,7 +112,7 @@ public class Entity implements Serializable {
                         count++;
                         continue;
                     }*/
-                    if(!property.isRelationshipWriteble(key)){
+                    if(!property.isRelationshipWritable(key)){
                         count++;
                         continue;
                     }
@@ -141,41 +140,29 @@ public class Entity implements Serializable {
     private String getColumnByRelation(Entity entity, String key) throws Exception{
         String columns = "";
         int ct = 1;
-        Field field = entity.getProperty().getFieldMap().get(key);
-        Annotation annotation = entity.getProperty().getRelationships().get(key);
-        String[] ann = convertRelationshipToString(annotation);
-        Entity ent = getEntityFromType(field);
+        //Field field = entity.getProperty().getFieldMap().get(key);
+        //Annotation annotation = entity.getProperty().getRelationships().get(key);
+        String[] ann = convertRelationshipToString(entity.getProperty().getRelationships().get(key),false);
+        Entity ent = getEntityFromType(entity.getProperty().getFieldMap().get(key));
         ent.setPropertyTable();
 
-        if(annotation.annotationType().getSimpleName().equals("OneToOne") ||
-             annotation.annotationType().getSimpleName().equals("ManyToOne")){
-            //if(ann.length > 0) {
-                for (String one : ann){
-                    try{
-                        columns += key + "_" + one + " " + convertToDBType(ent.getProperty().getFieldMap()
-                                .get(one.toUpperCase()).getType().getSimpleName());
-                    }catch (NullPointerException n){
-                        throw new Exception("The column " + one + " don't exist in  the "+ent.getName()+" table");
-                    }
+        /*if(annotation.annotationType().getSimpleName().equals("OneToOne") ||
+             annotation.annotationType().getSimpleName().equals("ManyToOne")){*/
+        for (String one : ann){
+            try{
+                columns += key + "_" + one + " " + convertToDBType(ent.getProperty().getFieldMap()
+                        .get(one.toUpperCase()).getType().getSimpleName());
+            }catch (NullPointerException n){
+                throw new Exception("The column " + one + " don't exist in  the "+ent.getName()+" table");
+            }
 
-                    if (entity.getProperty().getColumnMap().get(key.toUpperCase()).NotNull()) columns += " not null";
-                    if(ct < ann.length){
-                        columns  += ",";
-                        ct++;
-                    }
-                }
-            /*}else {
-                for (String one : ent.getFieldsPrimariesKey().keySet()) {
-                    columns += key + "_" + one + " " + convertToDBType(ent.getFieldsPrimariesKey()
-                            .get(one).getType().getSimpleName());
-                    if (entity.getProperty().getColumnMap().get(key.toUpperCase()).NotNull()) columns += " not null";
-                    if(ct < ent.getFieldsPrimariesKey().size()){
-                        columns  += ",";
-                        ct++;
-                    }
-                }
-            }*/
+            if (entity.getProperty().getColumnMap().get(key.toUpperCase()).NotNull()) columns += " not null";
+            if(ct < ann.length){
+                columns  += ",";
+                ct++;
+            }
         }
+        //}
 
         return columns;
     }
@@ -214,12 +201,12 @@ public class Entity implements Serializable {
 
         for (String column: property.getColumnMap().keySet()){
             if(property.getRelationships().containsKey(column)){
-                if(!property.isRelationshipWriteble(column)){
+                if(!property.isRelationshipWritable(column)){
                     count++;
                     continue;
                 }
 
-                for(String postfix :  convertRelationshipToString(property.getRelationships().get(column)))
+                for(String postfix :  convertRelationshipToString(property.getRelationships().get(column),false))
                     columns += column+"_"+postfix.toUpperCase()+",";
 
             }else if(!property.getPrimaryKeyMap().containsKey(column)){
@@ -336,15 +323,16 @@ public class Entity implements Serializable {
         for (String column : property.getRelationshipNames()){
             field = property.getFieldMap().get(column);
             Annotation annotation = property.getRelationships().get(column);
-            String [] primaryArray = convertRelationshipToString(annotation);
+            String [] primaryArray = convertRelationshipToString(annotation,true);
             EntityFilter filter = new EntityFilter("?");
             Entity merry;
+            //TODO use the conditional option
+            //if(property.isRelationshipWritable(column)/*annotation instanceof OneToOne && ((OneToOne)annotation).Create()*/){
 
-            if(annotation instanceof OneToOne && ((OneToOne)annotation).Create()){
                 try{
                     //Preparing the filter parameter
-                    merry = ((Entity)field.getType()
-                            .newInstance());
+                    /*merry = ((Entity)field.getType()
+                            .newInstance());*/
                     for(int i = 0; i < primaryArray.length;i++){
                         String cn = column+"_"+primaryArray[i].toUpperCase();
                         if((i+1) < primaryArray.length)
@@ -352,10 +340,19 @@ public class Entity implements Serializable {
                         else
                             filter.addArgument(primaryArray[i],entityRelationMap.get(cn)+"",null);
                     }
+                    Object o;
+                    if(property.isRelationshipWritable(column)){
+                        Log.e("setEntityColumn","Writable ");
+                        merry = ((Entity)field.getType().newInstance());
+                        o = merry.findOnce(filter);
+                    }else{
+                        Log.e("setEntityColumn","OneToMany");
+                        merry = getEntityFromType(field);
+                        o = merry.find(filter,entity);
+                    }
 
-                    merry.findOnce(filter);
                     try {
-                        setColumn(column,merry);
+                        setColumn(column,o);
                     } catch (NoSuchFieldException e) {
                         e.printStackTrace();
                     }
@@ -367,29 +364,22 @@ public class Entity implements Serializable {
                     e.printStackTrace();
                 }
 
-                /*try {
-                    if(field.getType().getSimpleName().equals(entity.getClass().getSimpleName())){
-                        setColumn(column, entity);
-                    }
-                } catch (NoSuchFieldException e) {
-                    e.printStackTrace();
-                } catch (InstantiationException e) {
-                    e.printStackTrace();
-                }*/
-
-            } else if(annotation instanceof OneToMany){
+            /*} else if(annotation instanceof OneToMany){
+                Log.e("setEntityColumn","OneToMany");
                 int count = 1;
                 for(String key: property.getPrimaryKeyMap().keySet()){
                     if(count < property.getPrimaryKeyMap().size())
-                        filter.addArgument(key,getColumnValue(key)+"",null,"and");
+                        filter.addArgument(column+"_"+key,getColumnValue(key)+"",null,"and");
                     else
-                        filter.addArgument(key,getColumnValue(key)+"",null);
+                        filter.addArgument(column+"_"+key,getColumnValue(key)+"",null);
+
+                    count++;
                 }
                 merry = getEntityFromType(field);
 
                 merry.find(filter,entity);
 
-            }
+            }*/
 
             /*if(field.getType().getSimpleName().equals("List")){
                 value = getList(field,entity);
@@ -552,16 +542,17 @@ public class Entity implements Serializable {
         return value;
     }
 
-    private String[] convertRelationshipToString(Annotation annotation){
+    private String[] convertRelationshipToString(Annotation annotation, boolean multi){
         String [] value = new String[0];
             if(annotation.annotationType().getSimpleName().equals("OneToOne"))
                 value =((OneToOne)annotation).ForeingKey();
-            else if(annotation.annotationType().getSimpleName().equals("OneToMany"))
+            else if(annotation.annotationType().getSimpleName().equals("OneToMany")
+                    && multi)
                 value = ((OneToMany)annotation).ForeingKey();
             else if(annotation.annotationType().getSimpleName().equals("ManyToOne"))
                 value = ((ManyToOne)annotation).ForeingKey();
-            else if(annotation.annotationType().getSimpleName().equals("ManyToMany"))
-                value = ((ManyToMany)annotation).ForeingKey();
+            /*else if(annotation.annotationType().getSimpleName().equals("ManyToMany"))
+                value = ((ManyToMany)annotation).ForeingKey();*/
 
         return value;
     }
@@ -826,6 +817,16 @@ public class Entity implements Serializable {
     }
 
     public synchronized long save(ContentValues content){
+        /*TODO Validate the relationship tables
+            Ex.:
+                user.text(Text){ManyToOne} <=> text.users(User){OneToMany}
+                user.text(Text){OneToOne} <=> text.user(User){OneToOne}
+
+                user.text(Text){OneToOne} !<=> text.users(User){OneToMany or ManyToOne}
+                user.text(Text){OneToMany} !<=> text.users(User){OneToMany or OneToOne}
+                user.text(Text){ManyToOne} !<=> text.users(User){ManyToOne or OneToOne}
+        */
+
         try{
             if(validateSaving)
                 catchNullValuesFromContent(content);

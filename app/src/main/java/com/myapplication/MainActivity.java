@@ -84,19 +84,26 @@ public class MainActivity extends AppCompatActivity {
         EntityFilter filter = new EntityFilter("?");
         filter//.addArgument("usuario", "Miguel", null)
         .addArgument("e", "2", null);
-
         text.findOnce(filter);
 
         filter = new EntityFilter("?");
         filter.addArgument("e","1", null);
         t.findOnce(filter);
 
+        /*try {
+            Log.e("Text "+t,t.getCreateString());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }*/
+
         Users user = new Users();
         filter = new EntityFilter("?");
-        filter.addArgument("id","1",null);
+        filter.addArgument("text_e","1",null,"and")
+                .addArgument("usuario","E%","like","and")
+                .addArgument("text_u","0");
         user.findOnce(filter);
 
-        /*user.user = "Miguel";
+        /*user.user = "Ericka";
         user.setPassword("1234");
         user.email = "delacrmi@gmail.com";
         user.role = "admin";
@@ -104,6 +111,7 @@ public class MainActivity extends AppCompatActivity {
         user.save();*/
 
         Log.d("Text", "user: " + text.user + " pk: " + text.e + " user: " + t.user + " pk: " + t.e /*+ " text: " + text.text2.e + " password: " + text.getPassword()*/);
+
         Log.d("User "+user,"test.user "+user.text.user);
         /*try {
             Users.class.getMethod("getCreateString", null).invoke(Users.class.newInstance(),null);
