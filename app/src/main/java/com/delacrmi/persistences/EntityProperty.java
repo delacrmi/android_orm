@@ -25,13 +25,14 @@ class EntityProperty {
 
     private Class<? extends Entity> tableClass;
     private String tableName;
-    private String[] polymorphism;
     private String nickName;
     private Map<String,Field> fieldMap = new HashMap();
     private Map<String,Column> columnMap = new HashMap();
     private Map<String,Column> primaryKey = new HashMap();
     private AnnotationType<String, Annotation, Boolean> relationship = new AnnotationType();
     private Map<String, String[]> tableTriggers = new HashMap();
+    
+    private Map<String,ColumnClass> columns = new HashMap();
     
     public EntityProperty(Class<? extends Entity> tableClass){
 
@@ -71,12 +72,15 @@ class EntityProperty {
 
     private void setElementsProperties(){
         Field[] fields = tableClass.getDeclaredFields();
+        ColumnClass columnClass;
         for(Field field : fields){
             Boolean isEntity = false;
             field.setAccessible(true);
             Annotation column = field.getAnnotation(Column.class);
+            
             if(column != null){
                 Column c = (Column) column;
+                
                 String name;
                 if(c.Name().equals("")) name = field.getName().toUpperCase();
                 else name = c.Name().toUpperCase();
@@ -84,6 +88,14 @@ class EntityProperty {
                 if(columnMap.containsKey(name))
                     throw new Error("The column name <" + name + "> is duplicated");
 
+                columnClass = new ColumnClass();
+                columnClass.name = name;
+                columnClass.field = field;
+                columnClass.notNull = c.NotNull();
+                columnClass.primaryKey = c.PrimaryKey();
+                columnClass.autoIncrement = c.AutoIncrement();
+                columnClass.dateFormat = c.DateFormat();
+                
                 fieldMap.put(name, field);
                 columnMap.put(name, c);
                 if(c.PrimaryKey()) primaryKey.put(name, c);
@@ -135,7 +147,7 @@ class EntityProperty {
     public String getNickName() {
         return nickName;
     }
-    public String[] getPolymorphism(){ return polymorphism; }
+    
     public Class<? extends Entity> getTableClass(){ return tableClass; }
 
     class AnnotationType<Key, Value, IsEntity> {
