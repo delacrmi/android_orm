@@ -319,67 +319,68 @@ public class Entity implements Serializable {
 
     private void setEntityColumn(Entity entity){
         Field field;
-        Object value = null;
+
         for (String column : property.getRelationshipNames()){
             field = property.getFieldMap().get(column);
             Annotation annotation = property.getRelationships().get(column);
-            String [] primaryArray = convertRelationshipToString(annotation,true);
+            String [] relationshipArray = convertRelationshipToString(annotation,true);
             EntityFilter filter = new EntityFilter("?");
             Entity merry;
+            Object o = null;
+
             //TODO use the conditional option
-            //if(property.isRelationshipWritable(column)/*annotation instanceof OneToOne && ((OneToOne)annotation).Create()*/){
+            if(property.isRelationshipWritable(column)/*annotation instanceof OneToOne && ((OneToOne)annotation).Create()*/){
 
-                try{
-                    //Preparing the filter parameter
-                    /*merry = ((Entity)field.getType()
-                            .newInstance());*/
-                    for(int i = 0; i < primaryArray.length;i++){
-                        String cn = column+"_"+primaryArray[i].toUpperCase();
-                        if((i+1) < primaryArray.length)
-                            filter.addArgument(primaryArray[i],entityRelationMap.get(cn)+"",null,"and");
-                        else
-                            filter.addArgument(primaryArray[i],entityRelationMap.get(cn)+"",null);
-                    }
-                    Object o;
-                    if(property.isRelationshipWritable(column)){
-                        Log.e("setEntityColumn","Writable ");
-                        merry = ((Entity)field.getType().newInstance());
-                        o = merry.findOnce(filter);
-                    }else{
-                        Log.e("setEntityColumn","OneToMany");
-                        merry = getEntityFromType(field);
-                        o = merry.find(filter,entity);
-                    }
+                Log.e("setEntityColumn","Writable ");
 
-                    try {
-                        setColumn(column,o);
-                    } catch (NoSuchFieldException e) {
-                        e.printStackTrace();
-                    }
+                //try{
 
+                for(int i = 0; i < relationshipArray.length;i++){
+                    String cn = column+"_"+relationshipArray[i].toUpperCase();
+                    if((i+1) < relationshipArray.length)
+                        filter.addArgument(relationshipArray[i],entityRelationMap.get(cn)+"",null,"and");
+                    else
+                        filter.addArgument(relationshipArray[i],entityRelationMap.get(cn)+"",null);
+                }
 
-                }catch (InstantiationException e) {
+                merry = getEntityFromType(field);
+                o = merry.findOnce(filter);
+
+                /*}catch (InstantiationException e) {
                     e.printStackTrace();
                 } catch (IllegalAccessException e) {
                     e.printStackTrace();
-                }
+                }*/
 
-            /*} else if(annotation instanceof OneToMany){
+            } else if(annotation instanceof OneToMany){
                 Log.e("setEntityColumn","OneToMany");
-                int count = 1;
-                for(String key: property.getPrimaryKeyMap().keySet()){
-                    if(count < property.getPrimaryKeyMap().size())
-                        filter.addArgument(column+"_"+key,getColumnValue(key)+"",null,"and");
-                    else
-                        filter.addArgument(column+"_"+key,getColumnValue(key)+"",null);
 
-                    count++;
-                }
                 merry = getEntityFromType(field);
 
-                merry.find(filter,entity);
+                for (String cr : relationshipArray){
+                    Log.e("relationship",cr);
+                    String[] ra = convertRelationshipToString(merry.getProperty().getRelationships().get(cr.toUpperCase()),false);
+                    for(int i = 0; i < ra.length;i++){
+                        String cn = ra[i].toUpperCase();
+                        Log.e("columns","that: "+cr+"_"+cn+" this: "+cn);
+                        if((i+1) < ra.length)
+                            filter.addArgument(cr+"_"+cn,getColumnValue(cn)+"",null,"and");
+                        else
+                            filter.addArgument(cr+"_"+cn,getColumnValue(cn)+"",null);
+                    }
+                }
 
-            }*/
+                o = merry.find(filter,entity);
+
+            }
+
+            try {
+                if(o != null) setColumn(column,o);
+            } catch (NoSuchFieldException e) {
+                e.printStackTrace();
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            }
 
             /*if(field.getType().getSimpleName().equals("List")){
                 value = getList(field,entity);
@@ -676,7 +677,9 @@ public class Entity implements Serializable {
     }
 
     private void findOnce(EntityFilter filter, Entity obj){
+        
         Temporary t = getTemporaryStructure(filter,getName(),1);
+
         if(t.next()){
             addValues(t.getRowAt(),null);
         }
@@ -779,7 +782,7 @@ public class Entity implements Serializable {
                 Log.i("Value",i);
 
             Entity entity;
-            String sql = ("select "+getColumnsNameAsString(true)+" from "+getName()).toUpperCase();
+            String sql = ("select "+master.getColumnsNameAsString(true)+" from "+master.getName()).toUpperCase();
             String[] arg = null;
 
             if(filter != null){
@@ -795,6 +798,9 @@ public class Entity implements Serializable {
                         entity = getClass().newInstance();
                         entity.addValues(cursor,master);
                         entities.add(entity);
+
+                        //TODO entity.findByPrymaryKey();
+                       // manager.temporyEntity.put(entity.toString(),entity);
                     }while (cursor.moveToNext());
 
                 } catch (InstantiationException e) {

@@ -30,6 +30,6 @@ public class Text extends Entity {
     public int e;
 
     @Column
-    @OneToMany(ForeingKey = {"id"})
+    @OneToMany(ForeingKey = {"text"})
     public List<Users> writers;
 }
