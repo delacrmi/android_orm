@@ -28,4 +28,6 @@ public @interface Column {
     String AfterToFinded() default "";
 
     String Type() default "";
+    
+    int length default 0;
 }
