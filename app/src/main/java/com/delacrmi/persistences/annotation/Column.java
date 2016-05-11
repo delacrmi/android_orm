@@ -29,5 +29,5 @@ public @interface Column {
 
     String Type() default "";
     
-    int length default 0;
+    int length() default 0;
 }
