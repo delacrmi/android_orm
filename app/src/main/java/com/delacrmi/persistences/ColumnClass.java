@@ -15,6 +15,9 @@ class ColumnClass {
     
     //this is the representation attribute in the entity class
     public Field field;
+
+    //know if the column is a entity
+    public boolean isEntity = false;
     
     //relationship name
     public String relationshipType;

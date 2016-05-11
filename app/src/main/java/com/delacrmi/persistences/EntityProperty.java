@@ -95,6 +95,7 @@ class EntityProperty {
                 columnClass.primaryKey = c.PrimaryKey();
                 columnClass.autoIncrement = c.AutoIncrement();
                 columnClass.dateFormat = c.DateFormat();
+                columnClass.length = c.Length();
                 
                 fieldMap.put(name, field);
                 columnMap.put(name, c);
@@ -106,6 +107,14 @@ class EntityProperty {
                     if (annotation instanceof OneToMany ||
                             annotation instanceof ManyToOne ||
                             annotation instanceof OneToOne) {
+                        columnClass.relationshipType = annotation.annotationType().getSimpleName();
+                        columnClass.relationshipColumns = convertRelationshipToString(columnClass.relationshipType,annotation);
+                        
+                        if(getEntityClassFromType(field) != null)
+                            columnClass.isEntity = true;
+                        
+                        columnClass.writable = isWritable(annotation);
+                        
                         if(field.getType().isInstance(new Entity()) ||
                                 field.getType().getSimpleName().equals("List")){
                             isEntity = true;
@@ -118,7 +127,16 @@ class EntityProperty {
             }
         }
     }
-
+    
+    public ColumnClass getColumn(String name) {
+        name = name.toUpperCase();
+        return columns.get(name);
+    }
+    
+    public Map<String, ColumnClass> getColumnsMap() {
+        return columns;
+    }
+    
     public Map<String, Field> getFieldMap() {
         return fieldMap;
     }
@@ -204,19 +222,43 @@ class EntityProperty {
     @Nullable
     public Class<? extends Entity> getEntityClassFromType(Field field){
         Class value = null;
+        
         if(field.getType().getSimpleName().equals("List")){
             Type genericFieldType = field.getGenericType();
             if(genericFieldType instanceof ParameterizedType){
                 ParameterizedType aType = (ParameterizedType) genericFieldType;
                 Type[] fieldArgTypes = aType.getActualTypeArguments();
-                for(Type fieldArgType : fieldArgTypes){
-                    value = (Class) fieldArgType;
-                    break;
-                }
+                for(Type fieldArgType : fieldArgTypes)
+                    if (((Class)fieldArgType).isInstance(new Entity())){
+                        value = (Class) fieldArgType;
+                        break;
+                    }
             }
-        }else if (field.getType().getSuperclass().isInstance(new Entity())) {
+        }else if (field.getType().isInstance(new Entity())
+        /*field.getType().getSuperclass().isInstance(new Entity())*/) {
             value = field.getType();
         }
+        return value;
+    }
+    
+    private String[] convertRelationshipToString(String type,Annotation annotation){
+        String [] value = new String[0];
+            if(type.equals("OneToOne"))
+                value =((OneToOne)annotation).ForeingKey();
+            else if(type.equals("OneToMany"))
+                value = ((OneToMany)annotation).ForeingKey();
+            else if(type.equals("ManyToOne"))
+                value = ((ManyToOne)annotation).ForeingKey();
+
+        return value;
+    }
+    
+    private boolean isWritable(Annotation annotation){
+        boolean value = false;
+        if(annotation instanceof OneToOne)
+            value = ((OneToOne)annotation).Create();
+        else if(annotation instanceof ManyToOne)
+            value = true;
         return value;
     }
 
