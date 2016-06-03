@@ -42,6 +42,8 @@ public class ExampleUnitTest {
         text = new Text();
         user = new Users();
         text.password = "1234";
+
+
         //cacheManager = new FileCacheManager(fakeContext);
     }
 
@@ -76,4 +78,5 @@ public class ExampleUnitTest {
         assertNull("The column will be null",text.user);
         assertEquals("The column will be 0",0,text.e);
     }
+
 }

@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 class EntityProperty {
 
@@ -78,7 +77,6 @@ class EntityProperty {
         ColumnClass columnClass;
         for(Field field : fields){
             columnCount ++;
-            Boolean isEntity = false;
             field.setAccessible(true);
             Annotation column = field.getAnnotation(Column.class);
             
@@ -120,14 +118,6 @@ class EntityProperty {
                         
                         columnClass.writable = isWritable(annotation);
                         relationship.add(name);
-                        
-                        /*if(field.getType().isInstance(new Entity()) ||
-                                field.getType().getSimpleName().equals("List")){
-                            isEntity = true;
-                        }
-
-                        relationship.put(name, annotation, isEntity);*/
-                        //relationshipName.add(name);
                     }
                 columns.put(name,columnClass);
             }
@@ -154,7 +144,7 @@ class EntityProperty {
     public List<String> getRelationshipNames() {
         return relationship;
     }
-//*******************************************************************************
+
     public String getTableName() {
         return tableName;
     }
@@ -163,7 +153,6 @@ class EntityProperty {
     }
     
     public Class<? extends Entity> getTableClass(){ return tableClass; }
-//--------------------------------------------------------------------------------
 
     @Nullable
     public Class<? extends Entity> getEntityClassFromType(Field field){
