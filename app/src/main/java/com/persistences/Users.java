@@ -1,6 +1,7 @@
 package com.persistences;
 
 import android.database.sqlite.SQLiteDatabase;
+import android.hardware.camera2.params.StreamConfigurationMap;
 
 import com.delacrmi.persistences.Entity;
 import com.delacrmi.persistences.annotation.Column;
@@ -26,19 +27,18 @@ public class Users extends Entity {
     String password;
 
     @Column(NotNull = true)
-    String email;
+     public String email;
 
     @Column(NotNull = true)
-    String role;
+    public String role;
 
     @Column
-    @OneToOne(ForeingKey = {"u","e"})
+    @ManyToOne(ForeingKey = {"u","e"})
     public Text text;
 
     @Column
-    @OneToOne(ForeingKey = {"u","e"},
-            Create = false)
-    public Text2 text2;
+    @OneToOne(ForeingKey = {"u"})
+    public Text text2;
 
     @Column(PrimaryKey = true,
             AutoIncrement = true)
@@ -64,5 +64,8 @@ public class Users extends Entity {
 
     public String getPassword(){
         return password;
+    }
+    public void setPassword(String password){
+        this.password = password;
     }
 }

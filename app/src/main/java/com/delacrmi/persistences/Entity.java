@@ -4,10 +4,11 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.delacrmi.persistences.annotation.Column;
-import com.delacrmi.persistences.annotation.ManyToMany;
 import com.delacrmi.persistences.annotation.ManyToOne;
 import com.delacrmi.persistences.annotation.OneToMany;
 import com.delacrmi.persistences.annotation.OneToOne;
@@ -24,6 +25,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,6 +45,8 @@ public class Entity implements Serializable {
     private static EntityManager manager = null;
     private SimpleDateFormat dateFormat;
     private Map<String,Object> entityRelationMap = new HashMap<>();
+
+    private boolean validateSaving = true;
 
     public String getNickName() {
         setPropertyTable();
@@ -82,88 +86,69 @@ public class Entity implements Serializable {
         setPropertyTable();
         int count = 1;
         String create = "";
+        ColumnClass column;
 
-        for(String key : property.getFieldMap().keySet()){
-            Field field = property.getFieldMap().get(key);
-
-            Column column = property.getColumnMap().get(key);
+        for(String key : property.getColumnsMap().keySet()){
+            column = property.getColumn(key);
 
             try {
 
-                String t  = " " + convertToDBType(field.getType().getSimpleName());
+                String t  = " " + convertToDBType(column.field.getType().getSimpleName());
 
-
-                if(column.PrimaryKey() && column.AutoIncrement())
+                if(column.primaryKey && column.autoIncrement)
                     create = key + t + " primary key autoincrement, " +create;
                 else
                     create += key + t;
 
-                if((column.NotNull() ||
-                        column.PrimaryKey()) && !column.AutoIncrement()) create += " not null";
+                if((column.notNull || column.primaryKey) &&
+                        !column.autoIncrement) create += " not null";
 
             } catch (Exception e) {
 
-                if(property.getRelationships().containsKey(key)){
-                    Annotation annotation = property.getRelationships().get(key);
-                    if( annotation instanceof OneToMany
-                            || (annotation instanceof OneToOne && !((OneToOne)annotation).Create())){
+                if(column.relationshipType != null){
+
+                    if(!column.writable){
                         count++;
                         continue;
                     }
 
-                    create += getColumnByRelation(this,key);
+                    create += getColumnByRelation(column);
 
                 }else throw new Exception("The column " + key + "need a relationship annotation type");
             }
 
             count ++;
-            if(count <= property.getFieldMap().size()){
-                if(!column.AutoIncrement())
+            if(count <= property.getColumnsMap().size()){
+                if(!column.autoIncrement)
                     create  += ", ";
-            }else if(column.AutoIncrement())
+            }else if(column.autoIncrement)
                 create = create.substring(0,create.length()-2);
         }
+
+        if(create.substring(create.length()-2,create.length()).equals(", "))
+            create = create.substring(0,create.length()-2);
 
         create = "create table "+property.getTableName()+"(" + create + ")";
         return create.toUpperCase();
     }
 
-    private String getColumnByRelation(Entity entity, String key) throws Exception{
+    private String getColumnByRelation(ColumnClass column) throws Exception{
         String columns = "";
         int ct = 1;
-        Field field = entity.getProperty().getFieldMap().get(key);
-        Annotation annotation = entity.getProperty().getRelationships().get(key);
-        String[] ann = convertRelationshipToString(annotation);
-        Entity ent = getEntityFromType(field);
-        ent.setPropertyTable();
+        ColumnClass ent;
 
-        if(annotation.annotationType().getSimpleName().equals("OneToOne") ||
-             annotation.annotationType().getSimpleName().equals("ManyToOne")){
-            if(ann.length > 0) {
-                for (String one : ann){
-                    try{
-                        columns += ent.getName() + "_" + one + " " + convertToDBType(ent.getFieldsPrimariesKey()
-                                .get(one.toUpperCase()).getType().getSimpleName());
-                    }catch (NullPointerException n){
-                        throw new Exception("The column " + one + " isn't a Primary key");
-                    }
+        for (String one : column.relationshipColumns){
+            try{
+                ent = getEntityFromType(column.field).getProperty().getColumn(one.toUpperCase());
+                columns += column.name + "_" + one + " " + convertToDBType(ent.field.getType().getSimpleName());
+            }catch (NullPointerException n){
+                throw new Exception("The column " + one + " don't exist in  the relationship table");
+            }
 
-                    if (entity.getProperty().getColumnMap().get(key).NotNull()) columns += " not null";
-                    if(ct < ann.length){
-                        columns  += ",";
-                        ct++;
-                    }
-                }
-            }else {
-                for (String one : ent.getFieldsPrimariesKey().keySet()) {
-                    columns += ent.getName() + "_" + one + " " + convertToDBType(ent.getFieldsPrimariesKey()
-                            .get(one).getType().getSimpleName());
-                    if (entity.getProperty().getColumnMap().get(key).NotNull()) columns += " not null";
-                    if(ct < ent.getFieldsPrimariesKey().size()){
-                        columns  += ",";
-                        ct++;
-                    }
-                }
+            if (column.notNull) columns += " not null";
+            if(ct < column.relationshipColumns.length){
+                columns  += ",";
+                ct++;
             }
         }
 
@@ -182,7 +167,7 @@ public class Entity implements Serializable {
         return  list;
     }
 
-    public Map<String, Field> getFieldsPrimariesKey(){
+    /*public Map<String, Field> getFieldsPrimariesKey(){
         Map<String, Field> p = new HashMap<String, Field>();
         setPropertyTable();
 
@@ -194,29 +179,34 @@ public class Entity implements Serializable {
     public Map<String, Column> getColumnPrimaryKey(){
         setPropertyTable();
         return property.getPrimaryKeyMap();
-    }
+    }*/
 
     public String getColumnsNameAsString(boolean primaryKey){
-        int count = 1;
         String columns = "";
         setPropertyTable();
-        int length = property.getColumnMap().size();
 
-        for (String column: property.getColumnMap().keySet()){
-            if(!property.getPrimaryKeyMap().containsKey(column)){
-                columns += column;
-                if(count < length){
-                    columns += ",";
+        for (String name: property.getColumnsMap().keySet()){
+            ColumnClass column = property.getColumn(name);
+            if(column.relationshipType != null){
+                if(!column.writable){
+                   // count++;
+                    continue;
                 }
+
+                for(String postfix :  convertRelationshipToString(column,false))
+                    columns += column.name+"_"+postfix.toUpperCase()+",";
+
+            }else if(!column.primaryKey){
+                columns += column.name+",";
             }else if(primaryKey){
-                columns += column;
-                if(count < length){
-                    columns += ",";
-                }
+                columns += column.name+",";
             }
 
-            count++;
+            //count++;
         }
+
+        if(columns.substring(columns.length()-1,columns.length()).equals(","))
+            columns = columns.substring(0,columns.length()-1);
 
         return columns;
     }
@@ -252,9 +242,9 @@ public class Entity implements Serializable {
         setPropertyTable();
         JSONObject json = new JSONObject();
 
-        for(String column : property.getFieldMap().keySet())
+        for(String column : property.getColumnsMap().keySet())
             try {
-                Field field = property.getFieldMap().get(column);
+                Field field = property.getColumn(column).field;
                 if(field.getType().getSimpleName().equals("Date")){
                     json.put(column, new SimpleDateFormat(property.getColumnMap()
                             .get(column).DateFormat())
@@ -270,6 +260,29 @@ public class Entity implements Serializable {
         return json;
     }
 
+    public boolean setColumnsFromJSON(@NonNull JSONObject json){
+        try{
+            Iterator iterator = json.keys();
+
+            while(iterator.hasNext()){
+                String name = iterator.next().toString();
+
+                try {
+                    addValues(name.toUpperCase(),json.get(name));
+                    //setEntityColumn(this);
+                } catch (JSONException e) {
+                    resetEntity();
+                    return false;
+                }
+
+            }
+            return true;
+        }catch (NullPointerException e){
+            resetEntity();
+            return false;
+        }
+    }
+
     public JSONArray getColumnstoJSONArray(){
         setPropertyTable();
         JSONArray array = new JSONArray();
@@ -283,7 +296,7 @@ public class Entity implements Serializable {
 
     public int getColumnsCount(){
         setPropertyTable();
-        return property.getFieldMap().size();
+        return property.getColumnsMap().size();
     }
 
     public String getName(){
@@ -296,9 +309,9 @@ public class Entity implements Serializable {
 
         setPropertyTable();
 
-        if(property.getFieldMap().containsKey(column))
+        if(property.getColumnsMap().containsKey(column))
             try {
-                Field field = property.getFieldMap().get(column);
+                Field field = property.getColumn(column).field;
                 field.setAccessible(true);
                 //TODO Check the Date and others conversions type
                 field.set(this, value);
@@ -316,84 +329,82 @@ public class Entity implements Serializable {
 
     private void setEntityColumn(Entity entity){
         Field field;
-        Object value = null;
-        for (String column : property.getRelationshipNames()){
-            field = property.getFieldMap().get(column);
-            Annotation annotation = property.getRelationships().get(column);
-            String [] primaryArray = convertRelationshipToString(annotation);
+        ColumnClass column;
+
+        for (String name : property.getRelationshipNames()){
+            field = property.getColumn(name).field;
+            column = property.getColumn(name);
+            //Annotation annotation = property.getRelationships().get(name);
+            String [] relationshipArray = convertRelationshipToString(column,true);
             EntityFilter filter = new EntityFilter("?");
             Entity merry;
+            Object o = null;
 
-            if(annotation instanceof OneToOne && ((OneToOne)annotation).Create()){
-                try{
-                    //Preparing the filter parameter
-                    merry = ((Entity)field.getType()
-                            .newInstance());
-                    for(int i = 0; i < primaryArray.length;i++){
-                        String cn = merry.getName()+"_"+primaryArray[i];
-                        if((i+1) < primaryArray.length)
-                            filter.addArgument(primaryArray[i],entityRelationMap.get(cn)+"",null,"and");
+            if(column.writable/*property.isRelationshipWritable(name)annotation instanceof OneToOne && ((OneToOne)annotation).Create()*/){
+
+                Log.e("setEntityColumn","Writable ");
+                /*if(manager.temporyEntity.containsKey(toString()))
+                    o = manager.temporyEntity.get(toString());
+               if(o == null){*/
+                    for(int i = 0; i < relationshipArray.length;i++){
+                        String cn = name+"_"+relationshipArray[i].toUpperCase();
+                        if((i+1) < relationshipArray.length)
+                            filter.addArgument(relationshipArray[i],entityRelationMap.get(cn)+"",null,"and");
                         else
-                            filter.addArgument(primaryArray[i],entityRelationMap.get(cn)+"",null);
-                    }
-
-                    merry.findOnce(filter);
-                    try {
-                        setColumn(column,merry);
-                    } catch (NoSuchFieldException e) {
-                        e.printStackTrace();
+                            filter.addArgument(relationshipArray[i],entityRelationMap.get(cn)+"",null);
                     }
 
 
-                }catch (InstantiationException e) {
-                    e.printStackTrace();
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                }
+                    merry = getEntityFromType(field);
+                    o = merry.findOnce(filter,true);
+                //}
 
-                /*try {
-                    if(field.getType().getSimpleName().equals(entity.getClass().getSimpleName())){
-                        setColumn(column, entity);
-                    }
-                } catch (NoSuchFieldException e) {
-                    e.printStackTrace();
-                } catch (InstantiationException e) {
-                    e.printStackTrace();
-                }*/
 
-            } else if(annotation instanceof OneToMany){
-                int count = 1;
-                for(String key: property.getPrimaryKeyMap().keySet()){
-                    if(count < property.getPrimaryKeyMap().size())
-                        filter.addArgument(key,getColumnValue(key)+"",null,"and");
-                    else
-                        filter.addArgument(key,getColumnValue(key)+"",null);
-                }
+            } else if(column.relationshipType.equals("OneToMany")/*annotation instanceof OneToMany*/){
+                Log.e("setEntityColumn","OneToMany");
+
                 merry = getEntityFromType(field);
 
-                merry.find(filter,entity);
+                for (String cr : relationshipArray) {
+                    Log.e("relationship", cr);
+
+                    /*if (manager.temporyEntity.containsKey(toString()))
+                        o = manager.temporyEntity.get(toString());
+
+                    if (o == null) {*/
+                        String[] ra = convertRelationshipToString(
+                                merry.getProperty().getColumn(cr.toUpperCase())/*merry.getProperty().getRelationships().get(cr.toUpperCase())*/,
+                                false);
+                        for (int i = 0; i < ra.length; i++) {
+                            String cn = ra[i].toUpperCase();
+                            Log.e("columns", "that: " + cr + "_" + cn + " this: " + cn);
+                            if ((i + 1) < ra.length)
+                                filter.addArgument(cr + "_" + cn, getColumnValue(cn) + "", null, "and");
+                            else
+                                filter.addArgument(cr + "_" + cn, getColumnValue(cn) + "", null);
+                        }
+                        o = merry.find(filter, false);
+                    //}
+
+                }
 
             }
 
-            /*if(field.getType().getSimpleName().equals("List")){
-                value = getList(field,entity);
-            }else if (field.getType().getSuperclass().isInstance(new Entity())) {
-                try {
-                    value = ((Entity)field.getType()
-                            .newInstance()).findOnce(null);
-                } catch (InstantiationException e) {
-                    e.printStackTrace();
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                }
-            }*/
+            try {
+                if(o != null) setColumn(name,o);
+            } catch (NoSuchFieldException e) {
+                e.printStackTrace();
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            }
         }
     }
 
-    private Object getColumnValue(String columnName){
+    @Nullable
+    public Object getColumnValue(String columnName){
         Object o = null;
         setPropertyTable();
-        Field field = property.getFieldMap().get(columnName);
+        Field field = property.getColumn(columnName.toUpperCase()).field /*property.getFieldMap().get(columnName)*/;
 
         try {
             o = field.get(this);
@@ -408,26 +419,28 @@ public class Entity implements Serializable {
         setPropertyTable();
         ContentValues cv = new ContentValues();
 
-        for(String key: property.getFieldMap().keySet())
-            setContentValue(cv, key, getColumnValue(key), true);
+        for(String key: property.getColumnsMap().keySet())
+            setContentValue(cv, key, getColumnValue(key),null);
         return cv;
     }
 
-    public void setContentValue(ContentValues content, String key, Object value, boolean check) throws NullPointerException{
+    public void setContentValue(ContentValues content, String key, Object value,
+                                @Nullable String entityColumn) throws NullPointerException{
         setPropertyTable();
         Column column = property.getColumnMap().get(key);
-
-        if(check){
+        Log.e("Column Name",key+" !! "+(column == null));
+        if(entityColumn == null){
             if((column.NotNull() || (column.PrimaryKey() && !column.AutoIncrement()))
                     && value == null) throw new NullPointerException("The column " + key + " can't be null");
-        }
+        }else key = entityColumn;
 
 
         if(value != null) Log.i("Class " + key, value+"");
         if(value != null && value.getClass().getSimpleName().equals("Text"))
             Log.d("Super", value.getClass().getSuperclass().getSimpleName());
 
-        if(value == null || (value instanceof Integer && (Integer)value == 0)) {
+        if(value == null ||
+                (value instanceof Integer && (Integer)value == 0 && column.PrimaryKey())) {
             if (column.AutoIncrement()) content.putNull(key);
         }else if(value.getClass().getSimpleName().equals("Integer") ||
                 value.getClass().getSimpleName().equals("int")) content.put(key, (Integer)value);
@@ -436,21 +449,21 @@ public class Entity implements Serializable {
         else if(value.getClass().getSimpleName().equals("BigDecimal")) content.put(key,((BigDecimal)value).longValue());
         else if(value.getClass().getSimpleName().equals("Date")) content.put(key,((Date)value).getTime());
         else if (value.getClass().getSimpleName().equals("List")){
-            Entity entity = getEntityFromType(property.getFieldMap().get(key));
+            Entity entity = getEntityFromType(property.getColumn(key).field);
             Log.i("table name", entity.getName());
             for(String keys : entity.getProperty().getPrimaryKeyMap().keySet())
-                setContentValue(content,entity.getName()+"_"+keys,entity.getColumnValue(keys), false);
+                setContentValue(content,key,entity.getColumnValue(keys),key+"_"+keys);
         }else if(value.getClass().getSuperclass().getSimpleName().equals("Entity")){
             Entity entity = (Entity)value;
-            Annotation annotation = property.getRelationships().get(key);
-            if(annotation instanceof OneToOne
-                    && !((OneToOne) annotation).Create())
+            ColumnClass annotation = property.getColumn(key)/*property.getRelationships().get(key)*/;
+            if(annotation.relationshipType.equals("OneToOne")//annotation instanceof OneToOne
+                    && !annotation.writable/*!((OneToOne) annotation).Create()*/)
                 return;
 
             Log.i("table name", entity.getName());
             for(String keys : entity.getProperty().getPrimaryKeyMap().keySet()) {
                 Log.i("Add", keys+" "+entity.getColumnValue(keys));
-                setContentValue(content, entity.getName()+"_"+keys, entity.getColumnValue(keys),false);
+                setContentValue(content, key, entity.getColumnValue(keys),key+"_"+keys);
             }
         }
     }
@@ -534,16 +547,19 @@ public class Entity implements Serializable {
         return value;
     }
 
-    private String[] convertRelationshipToString(Annotation annotation){
+    private String[] convertRelationshipToString(ColumnClass column, boolean multi){
         String [] value = new String[0];
-            if(annotation.annotationType().getSimpleName().equals("OneToOne"))
+        if(!column.relationshipType.equals("OneToMany") || multi)
+            value = column.relationshipColumns;
+            /*if(annotation.annotationType().getSimpleName().equals("OneToOne"))
                 value =((OneToOne)annotation).ForeingKey();
-            else if(annotation.annotationType().getSimpleName().equals("OneToMany"))
+            else if(annotation.annotationType().getSimpleName().equals("OneToMany")
+                    && multi)
                 value = ((OneToMany)annotation).ForeingKey();
             else if(annotation.annotationType().getSimpleName().equals("ManyToOne"))
                 value = ((ManyToOne)annotation).ForeingKey();
             else if(annotation.annotationType().getSimpleName().equals("ManyToMany"))
-                value = ((ManyToMany)annotation).ForeingKey();
+                value = ((ManyToMany)annotation).ForeingKey();*/
 
         return value;
     }
@@ -552,8 +568,8 @@ public class Entity implements Serializable {
             throws NoSuchFieldException, TypeNotPresentException {
         setPropertyTable();
         Object result;
-        if(property.getFieldMap().containsKey(fieldName)){
-            Field field = property.getFieldMap().get(fieldName);
+        if(property.getColumnsMap().containsKey(fieldName)){
+            Field field = property.getColumn(fieldName).field;
 
             switch (field.getType().getSimpleName()){
                 case "String": result = value;
@@ -592,42 +608,16 @@ public class Entity implements Serializable {
     }
     //endregion
 
-    private void addValues(Cursor cursor, Entity ob){
-        if(cursor != null){
-            for (int index = 0; index < cursor.getColumnNames().length; index++){
-                String columnName = cursor.getColumnName(index).toUpperCase();
-                int col = cursor.getColumnIndex(columnName);
-                try {
-                    Log.d("Add Values",columnName+" value "+cursor.getString(col));
-                    Object o = convertToFieldType(columnName, cursor.getString(col));
-                    if(!property.getRelationships().containsKey(columnName))
-                        setColumn(columnName, o);
-                    else if (ob != null)
-                        setColumn(columnName, ob);
-                    /*else {
-                        Log.d("Entity",columnName);
-                        entityRelationMap.put(columnName, o);
-                    }*/
-                } catch (NoSuchFieldException e) {
-                    //Log.d("Entity",columnName);
-                    entityRelationMap.put(columnName, cursor.getString(col));
-                } catch (InstantiationException e){
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
-    private void addValues(List<ColumnClass> temporary, Entity ob){
+    private void addValues(List<ColumnClass> temporary, boolean find){
         for (ColumnClass column : temporary){
             String columnName = column.name.toUpperCase();
             try {
                 Log.d("Add Values",columnName+" value "+column.value);
                 Object o = convertToFieldType(columnName, column.value);
-                if(!property.getRelationships().containsKey(columnName))
+                if(!property.getRelationshipNames().contains(columnName))
                     setColumn(columnName, o);
-                else if (ob != null)
-                    setColumn(columnName, ob);
+                /*else if (ob != null)
+                    setColumn(columnName, ob);*/
             } catch (NoSuchFieldException e) {
                 //Log.d("Entity",columnName);
                 entityRelationMap.put(columnName, column.value);
@@ -635,15 +625,27 @@ public class Entity implements Serializable {
                 e.printStackTrace();
             }
         }
+        if(find)
+            setEntityColumn(this);
+    }
 
-        setEntityColumn(this);
-
+    private void addValues(String columnName,Object o){
+        try {
+            Log.d("Add Values",columnName+" value "+o.toString());
+            o = convertToFieldType(columnName, o.toString());
+            if(!property.getRelationshipNames().contains(columnName))
+                setColumn(columnName, o);
+        } catch (NoSuchFieldException e) {
+            entityRelationMap.put(columnName, o.toString());
+        } catch (InstantiationException e){
+            e.printStackTrace();
+        }
     }
 
     private void resetEntity() {
         try {
-            for(String key: property.getFieldMap().keySet()){
-                Field field = property.getFieldMap().get(key);
+            for(String key: property.getColumnsMap().keySet()){
+                Field field = property.getColumn(key).field;
                 if(field.getType().getSimpleName().equals("int") ||
                         field.getType().getSimpleName().equals("Integer"))
                     setColumn(key, new Integer(0));
@@ -661,16 +663,20 @@ public class Entity implements Serializable {
     public synchronized Entity findOnce(EntityFilter filter){
         Temporary t = getTemporaryStructure(filter,getName(),1);
         if(t.next()){
-            addValues(t.getRowAt(),null);
+            addValues(t.getRowAt(),true);
         }
         return this;
     }
 
-    private void findOnce(EntityFilter filter, Entity obj){
+    private Entity findOnce(EntityFilter filter, boolean find){
+
         Temporary t = getTemporaryStructure(filter,getName(),1);
+
         if(t.next()){
-            addValues(t.getRowAt(),null);
+            addValues(t.getRowAt(),find);
         }
+
+        return this;
     }
 
     public List<Entity> find(EntityFilter filter){
@@ -683,7 +689,30 @@ public class Entity implements Serializable {
         while (t.next()){
             try {
                 Entity entity = getClass().newInstance();
-                entity.addValues(t.getRowAt(),null);
+                entity.addValues(t.getRowAt(),true);
+                entities.add(entity);
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+
+        }
+
+        return entities;
+    }
+
+    private List<Entity> find(EntityFilter filter, boolean find){
+        //TODO create the code to find a list entity object
+        setPropertyTable();
+
+        List<Entity> entities =  new ArrayList();
+        Temporary t = getTemporaryStructure(filter,getName(),0);
+
+        while (t.next()){
+            try {
+                Entity entity = getClass().newInstance();
+                entity.addValues(t.getRowAt(),find);
                 entities.add(entity);
             } catch (InstantiationException e) {
                 e.printStackTrace();
@@ -758,56 +787,26 @@ public class Entity implements Serializable {
         return t;
     }
 
-    private List<Entity> find(EntityFilter filter, Entity master){
-        //TODO create the code to find a list entity object
-        setPropertyTable();
-
-        List<Entity> entities = null;
-
-        try{
-            Log.i("Where",filter.getWhereValue());
-            for(String i : filter.getArgumentValue())
-                Log.i("Value",i);
-
-            Entity entity;
-            String sql = ("select "+getColumnsNameAsString(true)+" from "+getName()).toUpperCase();
-            String[] arg = null;
-
-            if(filter != null){
-                sql += (" where " + filter.getWhereValue() +" ").toUpperCase();
-                arg = filter.getArgumentValue();
-            }
-
-            Cursor cursor = manager.read().rawQuery(sql,arg);
-            if(cursor != null && cursor.moveToFirst()){
-                entities = new ArrayList();
-                try {
-                    do{
-                        entity = getClass().newInstance();
-                        entity.addValues(cursor,master);
-                        entities.add(entity);
-                    }while (cursor.moveToNext());
-
-                } catch (InstantiationException e) {
-                    e.printStackTrace();
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                }
-
-            }
-        }finally {
-            manager.close();
-        }
-
-        return entities;
-    }
-
     public synchronized long save(){
+        validateSaving = false;
         return save(getContentValues());
     }
 
     public synchronized long save(ContentValues content){
+        /*TODO Validate the relationship tables
+            Ex.:
+                user.text(Text){ManyToOne} <=> text.users(User){OneToMany}
+                user.text(Text){OneToOne} <=> text.user(User){OneToOne}
+
+                user.text(Text){OneToOne} !<=> text.users(User){OneToMany or ManyToOne}
+                user.text(Text){OneToMany} !<=> text.users(User){OneToMany or OneToOne}
+                user.text(Text){ManyToOne} !<=> text.users(User){ManyToOne or OneToOne}
+        */
+
         try{
+            if(validateSaving)
+                catchNullValuesFromContent(content);
+
             Long id = manager.write().insert(getName(), null, content);
             Map<String,Column> pks = property.getPrimaryKeyMap();
             for(String pk : pks.keySet())
@@ -822,6 +821,7 @@ public class Entity implements Serializable {
 
             return id;
         }finally {
+            validateSaving = true;
             manager.write().close();
         }
     }
@@ -866,4 +866,20 @@ public class Entity implements Serializable {
 
     //endregion
 
+    //throw an exception if the value could't be null
+    private boolean catchNullValuesFromContent(ContentValues content){
+        setPropertyTable();
+        for(String key : property.getColumnMap().keySet()){
+            Column column = property.getColumnMap().get(key);
+            if(!content.containsKey(key) && column.NotNull())
+                throw new NullPointerException("The column "+key+" can't be null");
+        }
+        return true;
+    }
+
+    public void refresh(){
+        //Log.e("entityRelationMap",entityRelationMap.size()+"");
+        setEntityColumn(this);
+
+    }
 }

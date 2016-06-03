@@ -4,6 +4,8 @@ package com.delacrmi.persistences;
  * Created by miguel on 01/02/16.
  */
 
+import android.support.annotation.Nullable;
+
 import com.delacrmi.persistences.annotation.Column;
 import com.delacrmi.persistences.annotation.ManyToOne;
 import com.delacrmi.persistences.annotation.OneToMany;
@@ -12,6 +14,8 @@ import com.delacrmi.persistences.annotation.Table;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -25,30 +29,43 @@ class EntityProperty {
     private Map<String,Field> fieldMap = new HashMap();
     private Map<String,Column> columnMap = new HashMap();
     private Map<String,Column> primaryKey = new HashMap();
-    private AnnotationType<String, Annotation, Boolean> relationship = new AnnotationType();
+    //private AnnotationType<String, Annotation, Boolean> relationship = new AnnotationType();
     private Map<String, String[]> tableTriggers = new HashMap();
-    //private List<String> relationshipName = new ArrayList<>();
-
-
+    
+    private Map<String,ColumnClass> columns = new HashMap();
+    private List<String> relationship = new ArrayList();
+    private int columnCount = 0;
+    
     public EntityProperty(Class<? extends Entity> tableClass){
 
         this.tableClass = tableClass;
-        setTableName();
+        Table table = tableClass.getAnnotation(Table.class);
+
+        tableName =  setTableName(this.tableClass);
+        setNickName(table);
+        setMethods(table);
+
         setElementsProperties();
 
     }
 
-    private void setTableName(){
-        Table table = tableClass.getAnnotation(Table.class);
-        if(table.Name().equals("")) tableName = getClass().getSimpleName().toUpperCase();
-        else tableName = table.Name().toUpperCase();
+    private String setTableName(Class<? extends Entity> tableClass){
 
+        Table table = tableClass.getAnnotation(Table.class);
+
+        if(table.Name().equals("")) return getClass().getSimpleName().toUpperCase();
+        else return table.Name().toUpperCase();
+
+    }
+
+    private void setNickName(Table table){
         if(table.NickName().equals("")) nickName = getClass().getSimpleName();
         else nickName = table.NickName();
+    }
 
+    private void setMethods(Table table){
         tableTriggers.put("before", table.BeforeToCreate());
         tableTriggers.put("after", table.AfterToCreated());
-
     }
 
     public Table getTableAnnotation(){
@@ -57,12 +74,15 @@ class EntityProperty {
 
     private void setElementsProperties(){
         Field[] fields = tableClass.getDeclaredFields();
+        ColumnClass columnClass;
         for(Field field : fields){
-            Boolean isEntity = false;
+            columnCount ++;
             field.setAccessible(true);
             Annotation column = field.getAnnotation(Column.class);
+            
             if(column != null){
                 Column c = (Column) column;
+                
                 String name;
                 if(c.Name().equals("")) name = field.getName().toUpperCase();
                 else name = c.Name().toUpperCase();
@@ -70,6 +90,15 @@ class EntityProperty {
                 if(columnMap.containsKey(name))
                     throw new Error("The column name <" + name + "> is duplicated");
 
+                columnClass = new ColumnClass();
+                columnClass.name = name;
+                columnClass.field = field;
+                columnClass.notNull = c.NotNull();
+                columnClass.primaryKey = c.PrimaryKey();
+                columnClass.autoIncrement = c.AutoIncrement();
+                columnClass.dateFormat = c.DateFormat();
+                columnClass.length = c.Length();
+                
                 fieldMap.put(name, field);
                 columnMap.put(name, c);
                 if(c.PrimaryKey()) primaryKey.put(name, c);
@@ -80,25 +109,32 @@ class EntityProperty {
                     if (annotation instanceof OneToMany ||
                             annotation instanceof ManyToOne ||
                             annotation instanceof OneToOne) {
-                        if(field.getType().isInstance(new Entity()) ||
-                                field.getType().getSimpleName().equals("List")){
-                            isEntity = true;
-                        }
+                        columnClass.relationshipType = annotation.annotationType().getSimpleName();
+                        columnClass.relationshipColumns = convertRelationshipToString(columnClass.relationshipType,annotation);
 
-                        relationship.put(name, annotation, isEntity);
-                        //relationshipName.add(name);
+                        Class cClass = getEntityClassFromType(field);
+                        if(cClass != null && cClass.isInstance(new Entity()))
+                            columnClass.isEntity = true;
+                        
+                        columnClass.writable = isWritable(annotation);
+                        relationship.add(name);
                     }
-
+                columns.put(name,columnClass);
             }
         }
     }
+    
+    public ColumnClass getColumn(String name) {
+        name = name.toUpperCase();
+        return columns.get(name);
+    }
+    
+    public Map<String, ColumnClass> getColumnsMap() {
+        return columns;
+    }
 
-    public Map<String, Field> getFieldMap() {
-        return fieldMap;
-    }
-    public Map<String, Annotation> getRelationships() {
-        return relationship.getValuesMap();
-    }
+    public int getColumnCount(){return  columnCount;}
+
     public Map<String, Column> getColumnMap() {
         return columnMap;
     }
@@ -106,10 +142,7 @@ class EntityProperty {
     public Map<String, String[]> getTableTriggers(){ return tableTriggers; }
 
     public List<String> getRelationshipNames() {
-        return relationship.getKeysList();
-    }
-    public Map<String, Boolean>isEntityMap(){
-        return relationship.isEntityType;
+        return relationship;
     }
 
     public String getTableName() {
@@ -118,53 +151,65 @@ class EntityProperty {
     public String getNickName() {
         return nickName;
     }
+    
     public Class<? extends Entity> getTableClass(){ return tableClass; }
 
-    class AnnotationType<Key, Value, IsEntity> {
-        private Map<Key, Value> valueMap = new HashMap<>();
-        private Map<Key, IsEntity> isEntityType = new HashMap<>();
-        private List<Key> keys = new ArrayList<>();
-        private Map<Key,Boolean> isEnableToCreate = new HashMap<>();
-        private Map<Key,String> tableName = new HashMap<>();
-
-        public void put(Key key, Value value, IsEntity isEntity){
-            keys.add(key);
-            valueMap.put(key, value);
-            isEntityType.put(key, isEntity);
-
-            if(value instanceof OneToOne)
-                setProperties(key, ((OneToOne)value).Create(),((OneToOne)value).TableName());
-            else if(value instanceof ManyToOne)
-                setProperties(key, true,((ManyToOne)value).TableName());
-            else if(value instanceof OneToMany)
-                setProperties(key, false,((OneToMany)value).TableName());
+    @Nullable
+    public Class<? extends Entity> getEntityClassFromType(Field field){
+        Class value = null;
+        
+        if(field.getType().getSimpleName().equals("List")){
+            Type genericFieldType = field.getGenericType();
+            if(genericFieldType instanceof ParameterizedType){
+                ParameterizedType aType = (ParameterizedType) genericFieldType;
+                Type[] fieldArgTypes = aType.getActualTypeArguments();
+                for(Type fieldArgType : fieldArgTypes)
+                    //try{
+                        if(getLastClass((Class)fieldArgType) != null/*((Class) fieldArgType).getSuperclass().isInstance(new Entity())*/){
+                            value = (Class) fieldArgType;
+                            break;
+                        }
+                    //}catch (NullPointerException e){}
+            }
+        }else if (getLastClass(field.getType()) != null
+        /*field.getType().getSuperclass().isInstance(new Entity())*/) {
+            value = field.getType();
         }
+        return value;
+    }
 
-        private void setProperties(Key key, Boolean create, String table){
-            isEnableToCreate.put(key,create);
-            tableName.put(key,table);
-        }
+    @Nullable
+    private Class getLastClass(Class cl){
+        try{
+            if(cl.getSuperclass() != null)
+                return getLastClass(cl.getSuperclass());
+        }catch (NullPointerException e){}
 
-        public Map<Key, Value> getValuesMap(){
-            return valueMap;
-        }
+        if(cl.isInstance(new Entity()))
+            return cl;
+        else
+            return null;
+    }
 
-        public Map<Key, IsEntity> getIsEntityTypeMap(){
-            return isEntityType;
-        }
+    private String[] convertRelationshipToString(String type,Annotation annotation){
+        String [] value = new String[0];
+            if(type.equals("OneToOne"))
+                value =((OneToOne)annotation).ForeingKey();
+            else if(type.equals("OneToMany"))
+                value = ((OneToMany)annotation).ForeingKey();
+            else if(type.equals("ManyToOne"))
+                value = ((ManyToOne)annotation).ForeingKey();
 
-        public List<Key> getKeysList(){
-            return keys;
-        }
-
-        public Map<Key,Boolean> getIsEnableToCreate(){
-            return isEnableToCreate;
-        }
-
-        public Map<Key,String> getTableName(){
-            return tableName;
-        }
-
+        return value;
+    }
+    
+    private boolean isWritable(Annotation annotation){
+        boolean value = false;
+        if(annotation instanceof OneToOne)
+            value = ((OneToOne)annotation).Create();
+        else if(annotation instanceof ManyToOne)
+            value = true;
+        return value;
     }
 
 }

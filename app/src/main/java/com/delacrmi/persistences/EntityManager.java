@@ -23,7 +23,7 @@ public class EntityManager  {
     //private List<Class> tables;
     private Map<String,String> entitiesNickName = new HashMap();
     private Map<String,EntityProperty> propertyMap = new HashMap();
-    private Map<String,Entity> temporyEntity = new HashMap();
+    public Map<String,Entity> temporyEntity = new HashMap();
 
     /*==================================================*/
     private Map<String,Class<? extends Entity>> name_class = new HashMap();

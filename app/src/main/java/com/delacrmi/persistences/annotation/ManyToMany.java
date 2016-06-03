@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface ManyToMany {
+@interface ManyToMany {
     String RelationshipTable();
     String[] ForeingKey() default {};
 }

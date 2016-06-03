@@ -28,7 +28,8 @@ public class EntityFilter extends Filter<String,String,String,String>{
             if(getComparisonMap().get(key) == null)
                 comp = " = ";
             else
-                comp = getComparisonMap().get(key).equals("") ? " = " : " "+ getComparisonMap().get(key)+" ";
+                comp = getComparisonMap().get(key)
+                        .replace(" ","").equals("") ? " = " : " "+ getComparisonMap().get(key)+" ";
 
             value += key + comp + parameterInjector + " " +
                     (getConditionMap().get(key) == null  ? "" : getConditionMap().get(key)) +" ";
@@ -46,5 +47,18 @@ public class EntityFilter extends Filter<String,String,String,String>{
             count++;
         }
         return value;
+    }
+
+    @Override
+    public EntityFilter addArgument(String column, String value, String comparison, String condition) {
+        return (EntityFilter)super.addArgument(column, value, comparison, condition);
+    }
+
+    public EntityFilter addArgument(String column, String value, String comparison) {
+        return addArgument(column, value,comparison,null);
+    }
+
+    public EntityFilter addArgument(String column, String value){
+        return addArgument(column, value,null,null);
     }
 }
