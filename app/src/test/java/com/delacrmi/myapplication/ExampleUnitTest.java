@@ -2,9 +2,9 @@ package com.delacrmi.myapplication;
 
 import android.content.Context;
 import com.delacrmi.persistences.EntityManager;
+import com.persistences.WriteText;
 import com.persistences.Text;
-import com.persistences.Text2;
-import com.persistences.Users;
+import com.persistences.Writer;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -28,23 +28,23 @@ public class ExampleUnitTest {
     Context mockContext;
 
     Text text;
-    Users user;
+    Writer user;
+    WriteText writeText;
 
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
 
         new EntityManager(mockContext,"prueba",null,1)
-                .addEntity(Users.class)
+                .addEntity(Writer.class)
                 .addEntity(Text.class)
-                .addEntity(Text2.class).init();
+                .addEntity(WriteText.class).init();
 
         text = new Text();
-        user = new Users();
-        text.password = "1234";
+        text.text = "Prueba";
 
-
-        //cacheManager = new FileCacheManager(fakeContext);
+        user = new Writer();
+        writeText = new WriteText();
     }
 
     @Test
@@ -56,27 +56,35 @@ public class ExampleUnitTest {
     public void createString() throws  Exception{
         //System.out.println(text.getCreateString());
         assertEquals("Error in the create table string",
-                "CREATE TABLE TEXT(E INTEGER PRIMARY KEY AUTOINCREMENT, CONTRASENA TEXT, U TEXT NOT NULL)",
+                "CREATE TABLE TEXT(ID INTEGER PRIMARY KEY AUTOINCREMENT, TEXT TEXT NOT NULL)",
                 text.getCreateString());
     }
 
     @Test
-    public void createStringWithRelationship() throws  Exception{
+    public void createStringWithRelationshipOneToMany() throws  Exception{
         //System.out.println(user.getCreateString());
         assertEquals("Error in the create table string",
-                "CREATE TABLE USUARIO_SISTEMAS(ID INTEGER PRIMARY KEY AUTOINCREMENT, CONTRASENA TEXT NOT NULL, ROLE TEXT NOT NULL, TEXT2_U TEXT, TEXT_U TEXT,TEXT_E INTEGER, EMAIL TEXT NOT NULL, USUARIO TEXT NOT NULL)",
+                "CREATE TABLE WRITER(ID INTEGER PRIMARY KEY AUTOINCREMENT, USER TEXT NOT NULL, EMAIL TEXT NOT NULL)",
                 user.getCreateString());
     }
 
     @Test
+    public void createStringWithRelationshipManyToOne() throws  Exception{
+        //System.out.println(user.getCreateString());
+        assertEquals("Error in the create table string",
+                "CREATE TABLE RELATIONSHIPWRITETEXT(WRITER_ID INTEGER NOT NULL, TEXT_ID INTEGER NOT NULL)",
+                writeText.getCreateString());
+    }
+
+    @Test
     public void getColumnValueNotNull() throws Exception{
-        assertNotNull("The column can't be null",text.getColumnValue("contrasena"));
+        assertNotNull("The column can't be null",text.getColumnValue("text"));
     }
 
     @Test
     public void getColumnValueNull() throws Exception{
-        assertNull("The column will be null",text.user);
-        assertEquals("The column will be 0",0,text.e);
+        assertNull("The column will be null",user.user);
+        assertEquals("The column will be 0",0,text.id);
     }
 
 }

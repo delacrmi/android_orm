@@ -49,20 +49,24 @@ public class EntityManager  {
         return list;
     }
 
-    public void setDbVersion(int dbVersion) {
+    public EntityManager setDbVersion(int dbVersion) {
         this.dbVersion = dbVersion;
+        return this;
     }
 
-    public void setDbName(String dbName) {
+    public EntityManager setDbName(String dbName) {
         this.dbName = dbName;
+        return  this;
     }
 
-    public void setContext(Context context) {
+    public EntityManager setContext(Context context) {
         this.context = context;
+        return this;
     }
 
-    public void setFactory(SQLiteDatabase.CursorFactory factory) {
+    public EntityManager setFactory(SQLiteDatabase.CursorFactory factory) {
         this.factory = factory;
+        return this;
     }
 
     public EntityManager(){}

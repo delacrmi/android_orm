@@ -27,9 +27,7 @@ class EntityProperty {
     private String tableName;
     private String nickName;
     private Map<String,Field> fieldMap = new HashMap();
-    private Map<String,Column> columnMap = new HashMap();
     private Map<String,Column> primaryKey = new HashMap();
-    //private AnnotationType<String, Annotation, Boolean> relationship = new AnnotationType();
     private Map<String, String[]> tableTriggers = new HashMap();
     
     private Map<String,ColumnClass> columns = new HashMap();
@@ -53,7 +51,7 @@ class EntityProperty {
 
         Table table = tableClass.getAnnotation(Table.class);
 
-        if(table.Name().equals("")) return getClass().getSimpleName().toUpperCase();
+        if(table.Name().equals("")) return tableClass.getSimpleName().toUpperCase();
         else return table.Name().toUpperCase();
 
     }
@@ -87,7 +85,7 @@ class EntityProperty {
                 if(c.Name().equals("")) name = field.getName().toUpperCase();
                 else name = c.Name().toUpperCase();
 
-                if(columnMap.containsKey(name))
+                if(columns.containsKey(name))
                     throw new Error("The column name <" + name + "> is duplicated");
 
                 columnClass = new ColumnClass();
@@ -100,7 +98,7 @@ class EntityProperty {
                 columnClass.length = c.Length();
                 
                 fieldMap.put(name, field);
-                columnMap.put(name, c);
+
                 if(c.PrimaryKey()) primaryKey.put(name, c);
 
                 //Adding the annotations properties for field
@@ -135,9 +133,6 @@ class EntityProperty {
 
     public int getColumnCount(){return  columnCount;}
 
-    public Map<String, Column> getColumnMap() {
-        return columnMap;
-    }
     public Map<String, Column> getPrimaryKeyMap(){ return  primaryKey; }
     public Map<String, String[]> getTableTriggers(){ return tableTriggers; }
 
@@ -164,15 +159,12 @@ class EntityProperty {
                 ParameterizedType aType = (ParameterizedType) genericFieldType;
                 Type[] fieldArgTypes = aType.getActualTypeArguments();
                 for(Type fieldArgType : fieldArgTypes)
-                    //try{
-                        if(getLastClass((Class)fieldArgType) != null/*((Class) fieldArgType).getSuperclass().isInstance(new Entity())*/){
-                            value = (Class) fieldArgType;
-                            break;
-                        }
-                    //}catch (NullPointerException e){}
+                    if(getLastClass((Class)fieldArgType) != null){
+                        value = (Class) fieldArgType;
+                        break;
+                    }
             }
-        }else if (getLastClass(field.getType()) != null
-        /*field.getType().getSuperclass().isInstance(new Entity())*/) {
+        }else if (getLastClass(field.getType()) != null) {
             value = field.getType();
         }
         return value;

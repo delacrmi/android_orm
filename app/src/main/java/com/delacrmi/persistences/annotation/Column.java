@@ -22,12 +22,6 @@ public @interface Column {
     boolean NotNull() default false;
 
     String DateFormat() default "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
-
-    String BeforeToFind() default "";
-
-    String AfterToFinded() default "";
-
-    String Type() default "";
     
     int Length() default 0;
 }

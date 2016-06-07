@@ -1,6 +1,7 @@
 package com.myapplication;
 
 import android.content.Context;
+import android.database.sqlite.SQLiteDatabase;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -21,13 +22,12 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import com.delacrmi.myapplication.R;
 
+import com.delacrmi.persistences.ConnectSQLite;
 import com.delacrmi.persistences.EntityFilter;
 import com.delacrmi.persistences.EntityManager;
 import com.persistences.Text;
-import com.persistences.Text2;
-import com.persistences.Users;
-
-import java.lang.reflect.InvocationTargetException;
+import com.persistences.WriteText;
+import com.persistences.Writer;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -72,61 +72,49 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        new EntityManager(this,"prueba",null,2)
-                .addEntity(Users.class)
-                .addEntity(Text.class)
-                .addEntity(Text2.class).init();
+        new EntityManager(this,"prueba",null,2){
+            @Override
+            public void onCreateDataBase(ConnectSQLite conn, SQLiteDatabase db) {
+                super.onCreateDataBase(conn, db);
+                Log.d("onCreateDatabase","testing the creation");
+            }
+        }.addEntity(Writer.class)
+         .addEntity(Text.class)
+         .addEntity(WriteText.class).init();
 
+        Writer writer = new Writer();
         Text text = new Text();
-        Text t = new Text();
-        /*text.user = "prueba2";
+        WriteText writeText = new WriteText();
+        /*writer.user = "Manuel";
+        writer.email = "mnl@gmail.com";
+        writer.save();*/
+
+        /*text.text = "text 1";
         text.save();*/
+
         EntityFilter filter = new EntityFilter("?");
-        filter//.addArgument("usuario", "Miguel", null)
-        .addArgument("e", "2", null);
-        //text.findOnce(filter);
 
-        filter = new EntityFilter("?");
-        filter.addArgument("e","2", null);
-        t.findOnce(filter);
+        filter.addArgument("id","1");
+        text.findOnce(filter);
+        //writer.findOnce(filter);
+        Log.e(text.toString(),text.writers.get(1).writer+"");
 
-        /*try {
-            Log.e("Text "+t,t.getCreateString());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }*/
+        /*Log.i("Valores",text.id+" "+writer.id);
 
-        Users user = new Users();
-        filter = new EntityFilter("?");
-        filter.addArgument("text_e","2",null,"and")
-                .addArgument("usuario","M%","like","and")
-                .addArgument("text_u","prueba2");
-        user.findOnce(filter);
+        writeText.writer = writer;
+        writeText.text = text;
+        writeText.save();
 
-        /*user.user = "Ericka Dahiana";
-        user.setPassword("1234");
-        user.email = "delacrmi@gmail.com";
-        user.role = "admin";
-        user.text = t;
-        user.save();*/
+        writeText.resetEntity();
 
-        Log.d("Text", "user: " + text.user + " pk: " + text.e + " user: " + t.user + " pk: " + t.e + " text: " + t.writers.get(1) /*+ " password: " + text.getPassword()*/);
+        filter = new EntityFilter();
+        filter.addArgument("id","2");
+        writer.findOnce(filter);
 
-        Log.d("User "+user,"test.user "+user.text.user+" writers "+user.text.writers.get(1).text);
-        user = t.writers.get(1);
-        user.refresh();
-        Log.d("User "+user,"user.text "+user.text);
-        /*try {
-            Users.class.getMethod("getCreateString", null).invoke(Users.class.newInstance(),null);
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
-        } catch (NoSuchMethodException e) {
-            e.printStackTrace();
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        }*/
+        writeText.writer = writer;
+        writeText.text = text;
+        writeText.save();*/
+
 
     }
 

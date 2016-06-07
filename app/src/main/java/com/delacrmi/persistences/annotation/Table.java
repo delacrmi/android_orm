@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
 public @interface Table {
-    String Name();
+    String Name() default "";
     boolean Synchronazable() default true;
     String NickName() default "";
     String [] BeforeToCreate() default {};
