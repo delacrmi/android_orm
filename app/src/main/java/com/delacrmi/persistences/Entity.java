@@ -158,25 +158,12 @@ public class Entity implements Serializable {
         return property;
     }
     public List<String> getPrimariesKeys(){
+        setPropertyTable();
         List<String> list = new ArrayList<String>();
         for(String pk : property.getPrimaryKeyMap().keySet())
             list.add(pk);
         return  list;
     }
-
-    /*public Map<String, Field> getFieldsPrimariesKey(){
-        Map<String, Field> p = new HashMap<String, Field>();
-        setPropertyTable();
-
-        for(String pk : property.getPrimaryKeyMap().keySet())
-            p.put(pk, property.getFieldMap().get(pk));
-        return p;
-    }
-
-    public Map<String, Column> getColumnPrimaryKey(){
-        setPropertyTable();
-        return property.getPrimaryKeyMap();
-    }*/
 
     public String getColumnsNameAsString(boolean primaryKey){
         String columns = "";
@@ -322,6 +309,21 @@ public class Entity implements Serializable {
                 getClass().getSimpleName());
     }
 
+    public EntityFilter createSimpleFilter(){
+        EntityFilter filter = new EntityFilter("?");
+
+        Log.e("setEntityColumn","Writable ");
+        List<String> columns = getPrimariesKeys();
+        for(int i = 0; i < columns.size();i++){
+            String cn = columns.get(i);
+            if((i+1) < columns.size())
+                filter.addArgument(cn,getColumnValue(cn)+"",null,"and");
+            else
+                filter.addArgument(cn,getColumnValue(cn)+"",null);
+        }
+        return filter;
+    }
+
     private void setEntityColumn(Entity entity){
         Field field;
         ColumnClass column;
@@ -335,25 +337,20 @@ public class Entity implements Serializable {
             Entity merry;
             Object o = null;
 
-            if(column.writable/*property.isRelationshipWritable(name)annotation instanceof OneToOne && ((OneToOne)annotation).Create()*/){
+            if(column.writable){
 
                 Log.e("setEntityColumn","Writable ");
-                /*if(manager.temporyEntity.containsKey(toString()))
-                    o = manager.temporyEntity.get(toString());
-               if(o == null){*/
-                    for(int i = 0; i < relationshipArray.length;i++){
-                        String cn = name+"_"+relationshipArray[i].toUpperCase();
-                        if((i+1) < relationshipArray.length)
-                            filter.addArgument(relationshipArray[i],entityRelationMap.get(cn)+"",null,"and");
-                        else
-                            filter.addArgument(relationshipArray[i],entityRelationMap.get(cn)+"",null);
-                    }
+                for(int i = 0; i < relationshipArray.length;i++){
+                    String cn = name+"_"+relationshipArray[i].toUpperCase();
+                    if((i+1) < relationshipArray.length)
+                        filter.addArgument(relationshipArray[i],entityRelationMap.get(cn)+"",null,"and");
+                    else
+                        filter.addArgument(relationshipArray[i],entityRelationMap.get(cn)+"",null);
+                }
 
 
-                    merry = getEntityFromType(field);
-                    o = merry.findOnce(filter,false);
-                //}
-
+                merry = getEntityFromType(field);
+                o = merry.findOnce(filter,false);
 
             } else if(column.relationshipType.equals("OneToMany")/*annotation instanceof OneToMany*/){
                 Log.e("setEntityColumn","OneToMany");
@@ -363,24 +360,17 @@ public class Entity implements Serializable {
                 for (String cr : relationshipArray) {
                     Log.e("relationship", cr);
 
-                    /*if (manager.temporyEntity.containsKey(toString()))
-                        o = manager.temporyEntity.get(toString());
-
-                    if (o == null) {*/
-                        String[] ra = convertRelationshipToString(
-                                merry.getProperty().getColumn(cr.toUpperCase())/*merry.getProperty().getRelationships().get(cr.toUpperCase())*/,
-                                false);
-                        for (int i = 0; i < ra.length; i++) {
-                            String cn = ra[i].toUpperCase();
-                            Log.e("columns", "that: " + cr + "_" + cn + " this: " + cn);
-                            if ((i + 1) < ra.length)
-                                filter.addArgument(cr + "_" + cn, getColumnValue(cn) + "", null, "and");
-                            else
-                                filter.addArgument(cr + "_" + cn, getColumnValue(cn) + "", null);
-                        }
-                        o = merry.find(filter);
-                    //}
-
+                    String[] ra = convertRelationshipToString(
+                            merry.getProperty().getColumn(cr.toUpperCase()),false);
+                    for (int i = 0; i < ra.length; i++) {
+                        String cn = ra[i].toUpperCase();
+                        Log.e("columns", "that: " + cr + "_" + cn + " this: " + cn);
+                        if ((i + 1) < ra.length)
+                            filter.addArgument(cr + "_" + cn, getColumnValue(cn) + "", null, "and");
+                        else
+                            filter.addArgument(cr + "_" + cn, getColumnValue(cn) + "", null);
+                    }
+                    o = merry.find(filter);
                 }
 
             }
@@ -399,7 +389,7 @@ public class Entity implements Serializable {
     public Object getColumnValue(String columnName){
         Object o = null;
         setPropertyTable();
-        Field field = property.getColumn(columnName.toUpperCase()).field /*property.getFieldMap().get(columnName)*/;
+        Field field = property.getColumn(columnName.toUpperCase()).field;
 
         try {
             o = field.get(this);
@@ -655,7 +645,7 @@ public class Entity implements Serializable {
 
     //region Persistences Methods
     public synchronized Entity findOnce(EntityFilter filter){
-        Temporary t = getTemporaryStructure(filter,getName(),1);
+        Temporary t = getTemporaryStructure(filter,getName(),getColumnsNameAsString(true),1);
         if(t.next()){
             addValues(t.getRowAt(),true);
         }
@@ -664,7 +654,7 @@ public class Entity implements Serializable {
 
     private Entity findOnce(EntityFilter filter, boolean find){
 
-        Temporary t = getTemporaryStructure(filter,getName(),1);
+        Temporary t = getTemporaryStructure(filter,getName(),getColumnsNameAsString(true),1);
 
         if(t.next()){
             addValues(t.getRowAt(),find);
@@ -674,11 +664,10 @@ public class Entity implements Serializable {
     }
 
     public List<Entity> find(EntityFilter filter){
-        //TODO create the code to find a list entity object
         setPropertyTable();
 
         List<Entity> entities =  new ArrayList();
-        Temporary t = getTemporaryStructure(filter,getName(),0);
+        Temporary t = getTemporaryStructure(filter,getName(),getColumnsNameAsString(true),0);
 
         while (t.next()){
             try {
@@ -696,30 +685,7 @@ public class Entity implements Serializable {
         return entities;
     }
 
-    /*private List<Entity> find(EntityFilter filter, boolean find){
-        //TODO create the code to find a list entity object
-        setPropertyTable();
-
-        List<Entity> entities =  new ArrayList();
-        Temporary t = getTemporaryStructure(filter,getName(),0);
-
-        while (t.next()){
-            try {
-                Entity entity = getClass().newInstance();
-                entity.addValues(t.getRowAt(),find);
-                entities.add(entity);
-            } catch (InstantiationException e) {
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            }
-
-        }
-
-        return entities;
-    }*/
-
-    private Temporary getTemporaryStructure(EntityFilter filter, String name, int limit){
+    private Temporary getTemporaryStructure(EntityFilter filter, String name, String columns, int limit){
         setPropertyTable();
 
         if(limit == 1)
@@ -732,7 +698,7 @@ public class Entity implements Serializable {
             for(String i : filter.getArgumentValue())
                 Log.i("Value",i);*/
 
-            String sql = ("select "+getColumnsNameAsString(true)+" from "+name).toUpperCase();
+            String sql = ("select "+columns+" from "+name).toUpperCase();
             String[] arg = null;
 
             if(filter != null){
@@ -817,7 +783,7 @@ public class Entity implements Serializable {
                 return id;
             }
             return 0l;
-            //TODO crete the update method and execute here
+
         }finally {
             validateSaving = true;
             manager.write().close();
@@ -839,6 +805,28 @@ public class Entity implements Serializable {
 
         return id;
     }
+
+    public synchronized int  update(EntityFilter filter){
+
+        String sql = null;
+        String[] arg = null;
+
+        if(filter != null){
+            sql = filter.getWhereValue().toUpperCase();
+            arg = filter.getArgumentValue();
+        }
+
+        try {
+            return manager.read().update(getName(),getContentValues(),sql,arg);
+        }finally {
+            manager.write().close();
+        }
+    }
+
+    public synchronized int update(){
+        return update(getEntityFilter());
+    }
+
     //endregion
 
     //region Override Methods

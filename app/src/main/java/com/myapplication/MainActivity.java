@@ -88,9 +88,9 @@ public class MainActivity extends AppCompatActivity {
         //Text text = new Text();
         //WriterText writeText = new WriterText();
 
-        writer.user = "Ericka";
+        /*writer.user = "Ericka";
         writer.email = "e@gmail.com";
-        writer.date = new Date();
+        writer.date = new Date();*/
         //writer.save();
 
         /*text.text = "text 1";
@@ -102,6 +102,8 @@ public class MainActivity extends AppCompatActivity {
                 .addArgument("user","E%","like");
         //text.findOnce(filter);
         writer.findOnce(filter);
+        //writer.email = "er1@gmail.com";
+        //writer.update();
         Log.e(writer.toString(),writer.texts+" "+writer.date);
 
         /*Log.i("Valores",text.id+" "+writer.id);

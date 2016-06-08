@@ -47,6 +47,7 @@ public class ExampleUnitTest {
         text.text = "Prueba";
 
         user = new Writer();
+
         writeText = new WriterText();
     }
 
@@ -67,7 +68,7 @@ public class ExampleUnitTest {
     public void createStringWithRelationshipOneToMany() throws  Exception{
 
         assertEquals("Error in the create table string",
-                "CREATE TABLE WRITER(ID INTEGER PRIMARY KEY AUTOINCREMENT, DATE_INSERT NUMERIC NOT NULL, USER TEXT NOT NULL, EMAIL TEXT NOT NULL)",
+                "CREATE TABLE WRITER(ID INTEGER PRIMARY KEY AUTOINCREMENT, DATE_INSERT NUMERIC, USER TEXT NOT NULL, EMAIL TEXT NOT NULL)",
                 user.getCreateString());
     }
 
@@ -91,10 +92,29 @@ public class ExampleUnitTest {
     }
 
     @Test
+    public void createASimpleFilter() throws Exception{
+        filter = text.createSimpleFilter();
+        assertNotNull("The filter Object can't be null",filter);
+        assertEquals("The string returned should be like","ID = ?",filter.getWhereValue());
+    }
+
+    @Test
+    public void createASimpleFilter2() throws Exception{
+        user.id = 1;
+        user.user = "Ericka";
+        filter = user.createSimpleFilter();
+        assertNotNull("The filter Object can't be null",filter);
+        assertEquals("The string returned will be like","ID = ? and USER = ?",filter.getWhereValue());
+        assertEquals("The length should be equals",2,filter.getArgumentValue().length);
+        assertEquals("The id should be","1",filter.getArgumentValue()[0]);
+        assertEquals("The id should be","Ericka",filter.getArgumentValue()[1]);
+    }
+
+    @Test
     public void addValueFilter(){
         filter = new EntityFilter()
                 .addArgument("id","1");
-        assertEquals("Filter will be equals to","id = ?",filter.getWhereValue());
+        assertEquals("Filter should be equals to","id = ?",filter.getWhereValue());
         assertNotNull("The Object can't be null",filter.getArgumentValue());
     }
 
@@ -102,8 +122,8 @@ public class ExampleUnitTest {
     public void addValueFilter1(){
         filter = new EntityFilter()
                 .addArgument("user",null,"is null");
-        assertEquals("Filter will be equals to","user is null",filter.getWhereValue());
-        assertNull("The Object will be null",filter.getArgumentValue());
+        assertEquals("Filter should be equals to","user is null",filter.getWhereValue());
+        assertNull("The Object should be null",filter.getArgumentValue());
     }
 
     @Test
@@ -111,8 +131,8 @@ public class ExampleUnitTest {
         filter = new EntityFilter()
                 .addArgument("user",null,"is null","and")
                 .addArgument("id","1","like");
-        assertEquals("Filter will be equals to","user is null and id like ?",filter.getWhereValue());
-        assertEquals("The length will be equals",1,filter.getArgumentValue().length);
+        assertEquals("Filter should be equals to","user is null and id like ?",filter.getWhereValue());
+        assertEquals("The length should be equals",1,filter.getArgumentValue().length);
     }
 
 }

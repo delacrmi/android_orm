@@ -27,8 +27,7 @@ public class Writer extends Entity {
     @Column(NotNull = true)
     public String email;
 
-    @Column(NotNull = true,
-            Name = "date_insert")
+    @Column(Name = "date_insert")
     public Date date;
 
     @Column
