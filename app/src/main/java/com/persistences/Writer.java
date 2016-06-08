@@ -28,7 +28,7 @@ public class Writer extends Entity {
 
     @Column
     @OneToMany(ForeingKey = {"writer"})
-    public List<WriteText> texts;
+    public List<WriterText> texts;
 
     /*@Column
     @OneToOne(ForeingKey = {"u"})

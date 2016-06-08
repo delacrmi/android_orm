@@ -2,7 +2,7 @@ package com.delacrmi.myapplication;
 
 import android.content.Context;
 import com.delacrmi.persistences.EntityManager;
-import com.persistences.WriteText;
+import com.persistences.WriterText;
 import com.persistences.Text;
 import com.persistences.Writer;
 
@@ -29,7 +29,7 @@ public class ExampleUnitTest {
 
     Text text;
     Writer user;
-    WriteText writeText;
+    WriterText writeText;
 
     @Before
     public void setup() {
@@ -38,13 +38,13 @@ public class ExampleUnitTest {
         new EntityManager(mockContext,"prueba",null,1)
                 .addEntity(Writer.class)
                 .addEntity(Text.class)
-                .addEntity(WriteText.class).init();
+                .addEntity(WriterText.class).init();
 
         text = new Text();
         text.text = "Prueba";
 
         user = new Writer();
-        writeText = new WriteText();
+        writeText = new WriterText();
     }
 
     @Test
@@ -72,7 +72,7 @@ public class ExampleUnitTest {
     public void createStringWithRelationshipManyToOne() throws  Exception{
         //System.out.println(user.getCreateString());
         assertEquals("Error in the create table string",
-                "CREATE TABLE RELATIONSHIPWRITETEXT(WRITER_ID INTEGER NOT NULL, TEXT_ID INTEGER NOT NULL)",
+                "CREATE TABLE RELATIONSHIPWRITERTEXT(WRITER_ID INTEGER NOT NULL, TEXT_ID INTEGER NOT NULL)",
                 writeText.getCreateString());
     }
 

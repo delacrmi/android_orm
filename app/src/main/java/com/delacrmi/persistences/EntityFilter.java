@@ -23,16 +23,17 @@ public class EntityFilter extends Filter<String,String,String,String>{
     public String getWhereValue() {
         String value = "";
 
-        for (String key : getNameList()){
+        for (WhereCondition condition : getConditionList()){
             String comp;
-            if(getComparisonMap().get(key) == null)
+            if(condition.comparison == null)
                 comp = " = ";
             else
-                comp = getComparisonMap().get(key)
-                        .replace(" ","").equals("") ? " = " : " "+ getComparisonMap().get(key)+" ";
+                comp = condition.comparison
+                        .replace(" ","").equals("") ? " = " : " "+ condition.comparison+" ";
 
-            value += key + comp + parameterInjector + " " +
-                    (getConditionMap().get(key) == null  ? "" : getConditionMap().get(key)) +" ";
+            value += condition.name + comp +
+                    (condition.value == null ? "" : parameterInjector) + " " +
+                    (condition.condition == null  ? "" : condition.condition) +" ";
         }
 
         return value;
@@ -40,12 +41,17 @@ public class EntityFilter extends Filter<String,String,String,String>{
 
     @Override
     public String[] getArgumentValue() {
-        String[] value = new String[getConditionMap().size()];
+        String[] value = new String[countValues()];
         int count = 0;
-        for (String key : getNameList()){
-            value[count] = getColumnMap().get(key);
-            count++;
-        }
+        for (WhereCondition condition : getConditionList())
+            if(condition.value != null){
+                value[count] = condition.value;
+                count++;
+            }
+
+        if(count == 0)
+            return null;
+
         return value;
     }
 

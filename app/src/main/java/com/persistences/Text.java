@@ -11,7 +11,7 @@ import java.util.List;
  * Created by delacrmi on 12/15/2015.
  */
 
-@Table(Name = "text")
+@Table
 public class Text extends Entity {
 
     @Column(NotNull = true,
@@ -24,7 +24,7 @@ public class Text extends Entity {
 
     @Column
     @OneToMany(ForeingKey = {"text"})
-    public List<WriteText> writers;
+    public List<WriterText> writers;
 
     /*@Column
     @OneToMany(ForeingKey = {"text"})

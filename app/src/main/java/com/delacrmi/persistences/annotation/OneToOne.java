@@ -12,7 +12,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface OneToOne {
-    String[] ForeingKey() /*default {}*/;
+    String[] ForeingKey();
     boolean Create() default true;
-    String TableName() default "";
 }

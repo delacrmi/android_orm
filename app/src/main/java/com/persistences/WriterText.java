@@ -9,8 +9,8 @@ import com.delacrmi.persistences.annotation.Table;
  * Created by delacrmi on 12/15/2015.
  */
 
-@Table(Name = "RelationshipWriteText")
-public class WriteText extends Entity {
+@Table(Name = "RelationshipWriterText")
+public class WriterText extends Entity {
 
     @Column(NotNull = true)
     @ManyToOne(ForeingKey = {"id"})

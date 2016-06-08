@@ -26,7 +26,7 @@ import com.delacrmi.persistences.ConnectSQLite;
 import com.delacrmi.persistences.EntityFilter;
 import com.delacrmi.persistences.EntityManager;
 import com.persistences.Text;
-import com.persistences.WriteText;
+import com.persistences.WriterText;
 import com.persistences.Writer;
 
 public class MainActivity extends AppCompatActivity {
@@ -80,11 +80,11 @@ public class MainActivity extends AppCompatActivity {
             }
         }.addEntity(Writer.class)
          .addEntity(Text.class)
-         .addEntity(WriteText.class).init();
+         .addEntity(WriterText.class).init();
 
         Writer writer = new Writer();
         Text text = new Text();
-        WriteText writeText = new WriteText();
+        WriterText writeText = new WriterText();
         /*writer.user = "Manuel";
         writer.email = "mnl@gmail.com";
         writer.save();*/
@@ -94,10 +94,11 @@ public class MainActivity extends AppCompatActivity {
 
         EntityFilter filter = new EntityFilter("?");
 
-        filter.addArgument("id","1");
-        text.findOnce(filter);
-        //writer.findOnce(filter);
-        Log.e(text.toString(),text.writers.get(1).writer+"");
+        filter.addArgument("user",null,"is not null","and")
+                .addArgument("user","E%","like");
+        //text.findOnce(filter);
+        writer.findOnce(filter);
+        Log.e(writer.toString(),writer.texts+"");
 
         /*Log.i("Valores",text.id+" "+writer.id);
 

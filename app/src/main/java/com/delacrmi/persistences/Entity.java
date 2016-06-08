@@ -744,7 +744,7 @@ public class Entity implements Serializable {
                 arg = filter.getArgumentValue();
             }
 
-//            Log.i("SQL",sql);
+            Log.i("SQL",sql+" "+arg.length);
 
             Cursor cursor = manager.read().rawQuery(sql,arg);
             if(cursor != null && cursor.moveToFirst()){
