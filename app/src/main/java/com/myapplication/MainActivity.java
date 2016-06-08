@@ -29,6 +29,8 @@ import com.persistences.Text;
 import com.persistences.WriterText;
 import com.persistences.Writer;
 
+import java.util.Date;
+
 public class MainActivity extends AppCompatActivity {
 
     /**
@@ -83,11 +85,13 @@ public class MainActivity extends AppCompatActivity {
          .addEntity(WriterText.class).init();
 
         Writer writer = new Writer();
-        Text text = new Text();
-        WriterText writeText = new WriterText();
-        /*writer.user = "Manuel";
-        writer.email = "mnl@gmail.com";
-        writer.save();*/
+        //Text text = new Text();
+        //WriterText writeText = new WriterText();
+
+        writer.user = "Ericka";
+        writer.email = "e@gmail.com";
+        writer.date = new Date();
+        //writer.save();
 
         /*text.text = "text 1";
         text.save();*/
@@ -98,7 +102,7 @@ public class MainActivity extends AppCompatActivity {
                 .addArgument("user","E%","like");
         //text.findOnce(filter);
         writer.findOnce(filter);
-        Log.e(writer.toString(),writer.texts+"");
+        Log.e(writer.toString(),writer.texts+" "+writer.date);
 
         /*Log.i("Valores",text.id+" "+writer.id);
 

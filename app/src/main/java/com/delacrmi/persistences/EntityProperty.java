@@ -158,11 +158,13 @@ class EntityProperty {
             if(genericFieldType instanceof ParameterizedType){
                 ParameterizedType aType = (ParameterizedType) genericFieldType;
                 Type[] fieldArgTypes = aType.getActualTypeArguments();
-                for(Type fieldArgType : fieldArgTypes)
-                    if(getLastClass((Class)fieldArgType) != null){
-                        value = (Class) fieldArgType;
+                for(Type fieldArgType : fieldArgTypes) {
+                    Class c = getLastClass((Class)fieldArgType);
+                    if (c != null) {
+                        value = c;
                         break;
                     }
+                }
             }
         }else if (getLastClass(field.getType()) != null) {
             value = field.getType();

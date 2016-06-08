@@ -1,6 +1,8 @@
 package com.delacrmi.myapplication;
 
 import android.content.Context;
+
+import com.delacrmi.persistences.EntityFilter;
 import com.delacrmi.persistences.EntityManager;
 import com.persistences.WriterText;
 import com.persistences.Text;
@@ -30,6 +32,7 @@ public class ExampleUnitTest {
     Text text;
     Writer user;
     WriterText writeText;
+    EntityFilter filter;
 
     @Before
     public void setup() {
@@ -54,7 +57,7 @@ public class ExampleUnitTest {
 
     @Test
     public void createString() throws  Exception{
-        //System.out.println(text.getCreateString());
+
         assertEquals("Error in the create table string",
                 "CREATE TABLE TEXT(ID INTEGER PRIMARY KEY AUTOINCREMENT, TEXT TEXT NOT NULL)",
                 text.getCreateString());
@@ -62,15 +65,15 @@ public class ExampleUnitTest {
 
     @Test
     public void createStringWithRelationshipOneToMany() throws  Exception{
-        //System.out.println(user.getCreateString());
+
         assertEquals("Error in the create table string",
-                "CREATE TABLE WRITER(ID INTEGER PRIMARY KEY AUTOINCREMENT, USER TEXT NOT NULL, EMAIL TEXT NOT NULL)",
+                "CREATE TABLE WRITER(ID INTEGER PRIMARY KEY AUTOINCREMENT, DATE_INSERT NUMERIC NOT NULL, USER TEXT NOT NULL, EMAIL TEXT NOT NULL)",
                 user.getCreateString());
     }
 
     @Test
     public void createStringWithRelationshipManyToOne() throws  Exception{
-        //System.out.println(user.getCreateString());
+
         assertEquals("Error in the create table string",
                 "CREATE TABLE RELATIONSHIPWRITERTEXT(WRITER_ID INTEGER NOT NULL, TEXT_ID INTEGER NOT NULL)",
                 writeText.getCreateString());
@@ -85,6 +88,31 @@ public class ExampleUnitTest {
     public void getColumnValueNull() throws Exception{
         assertNull("The column will be null",user.user);
         assertEquals("The column will be 0",0,text.id);
+    }
+
+    @Test
+    public void addValueFilter(){
+        filter = new EntityFilter()
+                .addArgument("id","1");
+        assertEquals("Filter will be equals to","id = ?",filter.getWhereValue());
+        assertNotNull("The Object can't be null",filter.getArgumentValue());
+    }
+
+    @Test
+    public void addValueFilter1(){
+        filter = new EntityFilter()
+                .addArgument("user",null,"is null");
+        assertEquals("Filter will be equals to","user is null",filter.getWhereValue());
+        assertNull("The Object will be null",filter.getArgumentValue());
+    }
+
+    @Test
+    public void addValueFilter2(){
+        filter = new EntityFilter()
+                .addArgument("user",null,"is null","and")
+                .addArgument("id","1","like");
+        assertEquals("Filter will be equals to","user is null and id like ?",filter.getWhereValue());
+        assertEquals("The length will be equals",1,filter.getArgumentValue().length);
     }
 
 }

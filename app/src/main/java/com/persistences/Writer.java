@@ -7,6 +7,7 @@ import com.delacrmi.persistences.annotation.Column;
 import com.delacrmi.persistences.annotation.OneToMany;
 import com.delacrmi.persistences.annotation.Table;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -25,6 +26,10 @@ public class Writer extends Entity {
 
     @Column(NotNull = true)
     public String email;
+
+    @Column(NotNull = true,
+            Name = "date_insert")
+    public Date date;
 
     @Column
     @OneToMany(ForeingKey = {"writer"})

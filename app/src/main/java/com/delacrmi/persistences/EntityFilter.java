@@ -24,16 +24,18 @@ public class EntityFilter extends Filter<String,String,String,String>{
         String value = "";
 
         for (WhereCondition condition : getConditionList()){
+            if(value != "") value += " ";
+
             String comp;
             if(condition.comparison == null)
-                comp = " = ";
+                comp = " =";
             else
                 comp = condition.comparison
-                        .replace(" ","").equals("") ? " = " : " "+ condition.comparison+" ";
+                        .replace(" ","").equals("") ? " =" : " "+condition.comparison;
 
             value += condition.name + comp +
-                    (condition.value == null ? "" : parameterInjector) + " " +
-                    (condition.condition == null  ? "" : condition.condition) +" ";
+                    (condition.value == null ? "" : " "+parameterInjector) +
+                    (condition.condition == null  ? "" : " "+condition.condition);
         }
 
         return value;

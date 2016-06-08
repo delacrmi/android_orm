@@ -309,9 +309,8 @@ public class Entity implements Serializable {
             try {
                 Field field = property.getColumn(column).field;
                 field.setAccessible(true);
-                //TODO Check the Date and others conversions type
-                field.set(this, value);
 
+                field.set(this,value);
             }catch (SecurityException e) {
                 e.printStackTrace();
             } catch (IllegalAccessException e) {
@@ -442,23 +441,16 @@ public class Entity implements Serializable {
         else if(value.getClass().getSimpleName().equals("Long")) content.put(key,(Long)value);
         else if(value.getClass().getSimpleName().equals("BigDecimal")) content.put(key,((BigDecimal)value).longValue());
         else if(value.getClass().getSimpleName().equals("Date")) content.put(key,((Date)value).getTime());
-        /*else if (value.getClass().getSimpleName().equals("List")){
-            Entity entity = getEntityFromType(property.getColumn(key).field);
-            Log.i("table name", entity.getName());
-            for(String keys : entity.getProperty().getPrimaryKeyMap().keySet())
-                setContentValue(content,key,entity.getColumnValue(keys),key+"_"+keys);
-        }*/else /*if(value.getClass().getSuperclass().getSimpleName().equals("Entity"))*/{
+        else{
 
             ColumnClass annotation = property.getColumn(key);
-            if(!annotation.writable/*!((OneToOne) annotation).Create()*/)
+            if(!annotation.writable)
                 return;
 
-            Entity entity = (Entity) getColumnValue(annotation.name)/*getEntityFromType(annotation.field)*/;
-
-
+            Entity entity = (Entity) getColumnValue(annotation.name);
 
             Log.i("table name", entity.getName());
-            for(String keys : annotation.relationshipColumns /*entity.getProperty().getPrimaryKeyMap().keySet()*/) {
+            for(String keys : annotation.relationshipColumns) {
                 Log.i("Add", keys+" "+entity.getColumnValue(keys.toUpperCase()));
                 setContentValue(content, key+"_"+keys.toUpperCase(), entity.getColumnValue(keys.toUpperCase()));
             }
@@ -562,7 +554,7 @@ public class Entity implements Serializable {
         return value;
     }
 
-    public Object convertToFieldType(String fieldName, String value)
+    public Object convertToFieldType(String fieldName, Object value)
             throws NoSuchFieldException, TypeNotPresentException {
         setPropertyTable();
         Object result;
@@ -572,16 +564,17 @@ public class Entity implements Serializable {
             switch (column.field.getType().getSimpleName()){
                 case "String": result = value;
                     break;
-                case "int": result = Integer.parseInt(value);
+                case "int": result = Integer.parseInt(value.toString());
                     break;
-                case "BigDecimal": result = new BigDecimal(value);
+                case "BigDecimal": result = new BigDecimal(value.toString());
                     break;
-                case "Long": result = Long.parseLong(value);
+                case "Long": result = Long.parseLong(value.toString());
                     break;
                 case "Date":
                     dateFormat = new SimpleDateFormat(column.dateFormat);
                     Date l = new Date();
-                    l.setTime(Long.parseLong(value));
+                    Log.e("Empty",value.toString().isEmpty()+"");
+                    l.setTime(Long.parseLong(value.toString()));
 
                     String d = dateFormat.format(l);
                     try{
@@ -594,8 +587,11 @@ public class Entity implements Serializable {
 
                     break;
                 default:
-                    throw new TypeNotPresentException("Error converting field type: " +
-                            column.field.getType().getSimpleName(), null);
+                    if(column.isEntity)
+                        result = value;
+                    else
+                        throw new TypeNotPresentException("Error converting field type: " +
+                                column.field.getType().getSimpleName(), null);
             }
 
         }else throw new NoSuchFieldException("The column " + fieldName + " not exist in the Entity " +
@@ -877,10 +873,12 @@ public class Entity implements Serializable {
 
             if(column.relationshipType == null && !content.containsKey(key) && column.notNull)
                 throw new NullPointerException("Table : "+getName()+" The column "+key+" can't be null");
-            else
-                for(String key_s : column.relationshipColumns)
-                    if(!content.containsKey(key+"_"+key_s.toUpperCase()) && column.notNull)
-                        throw new NullPointerException("Table : "+getName()+" The virtual column "+key_s.toUpperCase()+" can't be null");
+            else if(column.relationshipType != null){
+                Log.e("Null array",key);
+                for (String key_s : column.relationshipColumns)
+                    if (!content.containsKey(key + "_" + key_s.toUpperCase()) && column.notNull)
+                        throw new NullPointerException("Table : " + getName() + " The virtual column " + key_s.toUpperCase() + " can't be null");
+            }
         }
         return true;
     }
