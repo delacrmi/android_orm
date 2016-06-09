@@ -4,7 +4,7 @@ This open source project is a simple Object Relationship Mapping to Android, tha
 
 ##Creating the Data Base
 
-To create a **Data Base** you need to use the ==**EntityManager** Class==.
+To create a **Data Base** you need to use the **EntityManager** Class.
 
 ```java
 //setup the EntityManager
@@ -162,11 +162,11 @@ writer.findOnce(filter);
 |	Length |	0		 |
 
 ####3. **Relationship**
-|	Names	||**Attributes**|**Default Value**|
-|-----------||----------|-------|
-|**@OneToOne**||	ForeingKey	|	null	|
-|			||	Create		|	true	|
+|	Names	|**Attributes**|**Default Value**|
+|-----------|----------|-------|
+|**@OneToOne**|	ForeingKey	|	null	|
+|			|	Create		|	true	|
+|			|				|			|
+|**@OneToMany**|ForeingKey	|	null	|
 |			||				|			|
-|**@OneToMany**||ForeingKey	|	null	|
-|			||				|			|
-|**@ManyToOne**||ForeingKey	|	null	|
+|**@ManyToOne**|ForeingKey	|	null	|
