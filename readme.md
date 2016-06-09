@@ -1,4 +1,4 @@
-#**==Android ORM==**
+#**Android ORM**
 This open source project is a simple Object Relationship Mapping to Android, that provides simple and powerful classes for interact with SQLite Databases.
 
 
@@ -52,7 +52,7 @@ new EntityManager(this,"prueba",null,2){
 
 ##Tables
 
-To define ours data **Tables** just need to extends the ==**Entity** class== and use the annotations to provide the necessary information about the tables properties.
+To define ours data **Tables** just need to extends the **Entity** class and use the annotations to provide the necessary information about the tables properties.
 
 ```java
 //eager
@@ -170,4 +170,3 @@ writer.findOnce(filter);
 |**@OneToMany**||ForeingKey	|	null	|
 |			||				|			|
 |**@ManyToOne**||ForeingKey	|	null	|
-
