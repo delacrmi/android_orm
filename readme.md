@@ -1,4 +1,4 @@
-#**Android ORM**
+#**Simorm**
 This open source project is a simple Object Relationship Mapping to Android, that provides simple and powerful classes for interact with SQLite Databases.
 
 

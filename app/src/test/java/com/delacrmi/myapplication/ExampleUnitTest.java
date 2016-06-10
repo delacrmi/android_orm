@@ -2,8 +2,8 @@ package com.delacrmi.myapplication;
 
 import android.content.Context;
 
-import com.delacrmi.persistences.EntityFilter;
-import com.delacrmi.persistences.EntityManager;
+import com.delacrmi.simorm.EntityFilter;
+import com.delacrmi.simorm.EntityManager;
 import com.persistences.WriterText;
 import com.persistences.Text;
 import com.persistences.Writer;

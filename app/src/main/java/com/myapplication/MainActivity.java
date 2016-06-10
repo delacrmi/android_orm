@@ -22,9 +22,9 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import com.delacrmi.myapplication.R;
 
-import com.delacrmi.persistences.ConnectSQLite;
-import com.delacrmi.persistences.EntityFilter;
-import com.delacrmi.persistences.EntityManager;
+import com.delacrmi.simorm.ConnectSQLite;
+import com.delacrmi.simorm.EntityFilter;
+import com.delacrmi.simorm.EntityManager;
 import com.persistences.Text;
 import com.persistences.WriterText;
 import com.persistences.Writer;

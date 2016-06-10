@@ -1,10 +1,9 @@
 package com.persistences;
 
-import com.delacrmi.persistences.Entity;
-import com.delacrmi.persistences.annotation.Column;
-import com.delacrmi.persistences.annotation.OneToMany;
-import com.delacrmi.persistences.annotation.Table;
-
+import com.delacrmi.simorm.Entity;
+import com.delacrmi.simorm.annotation.Column;
+import com.delacrmi.simorm.annotation.OneToMany;
+import com.delacrmi.simorm.annotation.Table;
 import java.util.List;
 
 /**
