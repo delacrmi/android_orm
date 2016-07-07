@@ -117,12 +117,12 @@ public class WriterText extends Entity {
     @ManyToOne(ForeingKey = {"id"})
     public int text;
 
-	public Text getText(){
-    	retrun new Writer.fineOne(new EntityFilter().addArgument("id",writer+""));
+	public Text getWriter(){
+    	return new Writer.fineOne(new EntityFilter().addArgument("id",writer+""));
     }
 
     public Text getText(){
-    	retrun new Text.fineOne(new EntityFilter().addArgument("id",text+""));
+    	return new Text.fineOne(new EntityFilter().addArgument("id",text+""));
     }
 }
 ```

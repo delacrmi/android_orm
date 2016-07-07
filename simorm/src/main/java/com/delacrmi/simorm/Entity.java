@@ -40,6 +40,7 @@ public class Entity implements Serializable {
     private static EntityManager manager = null;
     private SimpleDateFormat dateFormat;
     private Map<String,Object> entityRelationMap = new HashMap<>();
+    private int pagination = 0;
 
     private boolean validateSaving = true;
     private boolean isSaved = false;
@@ -826,6 +827,25 @@ public class Entity implements Serializable {
         return update(getEntityFilter());
     }
 
+    public synchronized int  delete(EntityFilter filter){
+
+        String sql = null;
+        String[] arg = null;
+
+        if(filter != null){
+            sql = filter.getWhereValue().toUpperCase();
+            arg = filter.getArgumentValue();
+        }
+
+        try {
+            return manager.read().delete(getName(),sql,arg);
+        }finally {
+            manager.write().close();
+        }
+    }
+
+    public synchronized int delete(){return delete(getEntityFilter());}
+
     //endregion
 
     //region Override Methods
@@ -871,7 +891,6 @@ public class Entity implements Serializable {
     }
 
     public Entity refresh(){
-        //Log.e("entityRelationMap",entityRelationMap.size()+"");
         setEntityColumn(this);
         return this;
 
