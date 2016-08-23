@@ -4,6 +4,8 @@ import com.delacrmi.simorm.Entity;
 import com.delacrmi.simorm.annotation.Column;
 import com.delacrmi.simorm.annotation.OneToMany;
 import com.delacrmi.simorm.annotation.Table;
+
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -20,6 +22,9 @@ public class Text extends Entity {
 
     @Column(NotNull = true)
     public String text;
+
+    @Column
+    public BigDecimal value;
 
     @Column
     @OneToMany(ForeingKey = {"text"})

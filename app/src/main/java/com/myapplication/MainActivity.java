@@ -29,7 +29,8 @@ import com.persistences.Text;
 import com.persistences.WriterText;
 import com.persistences.Writer;
 
-import java.util.Date;
+import java.math.BigDecimal;
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -85,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
          .addEntity(WriterText.class).init();
 
         Writer writer = new Writer();
-        //Text text = new Text();
+        Text text = new Text();
         //WriterText writeText = new WriterText();
 
         /*writer.user = "Ericka";
@@ -93,22 +94,26 @@ public class MainActivity extends AppCompatActivity {
         writer.date = new Date();*/
         //writer.save();
 
-        /*text.text = "text 1";
-        text.save();*/
+        text.text = "text 1";
+        text.value = new BigDecimal("24000.50");
+        text.save();
 
         EntityFilter filter = new EntityFilter("?");
 
-        filter.addArgument("user",null,"is not null","and")
-                .addArgument("user","E%","like");
-        //text.findOnce(filter);
-        writer.findOnce(filter);
+        filter//.addArgument("user",null,"is not null","and")
+                .addArgument("text","t%","like");
+        text.findOnce(filter);
+
+        /*text.value = new BigDecimal("24000.2212");
+        text.update();*/
+        //writer.findOnce(filter);
         //writer.email = "er1@gmail.com";
         //writer.update();
-        Log.e(writer.toString(),writer.texts+" "+writer.date);
+        //Log.e(writer.toString(),writer.texts+" "+writer.date);
 
-        /*Log.i("Valores",text.id+" "+writer.id);
+        Log.i(text.toString(),text.id+" "+text.value);
 
-        writeText.writer = writer;
+        /*writeText.writer = writer;
         writeText.text = text;
         writeText.save();
 

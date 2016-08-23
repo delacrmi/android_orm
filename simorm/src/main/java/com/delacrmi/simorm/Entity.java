@@ -429,7 +429,7 @@ public class Entity implements Serializable {
                 value.getClass().getSimpleName().equals("int")) content.put(key, (Integer)value);
         else if(value.getClass().getSimpleName().equals("String")) content.put(key,(String)value);
         else if(value.getClass().getSimpleName().equals("Long")) content.put(key,(Long)value);
-        else if(value.getClass().getSimpleName().equals("BigDecimal")) content.put(key,((BigDecimal)value).longValue());
+        else if(value.getClass().getSimpleName().equals("BigDecimal")) content.put(key,((BigDecimal)value).toString());
         else if(value.getClass().getSimpleName().equals("Date")) content.put(key,((Date)value).getTime());
         else{
 
@@ -514,11 +514,19 @@ public class Entity implements Serializable {
                 break;
             case "Integer": value = "INTEGER";
                 break;
-            case "BigDecimal": value = "real";
+            case "BigDecimal": value = "text";
                 break;
             case "Long": value = "numeric";
                 break;
             case "Date": value = "numeric";
+                break;
+            case "Double": value = "real";
+                break;
+            case "double": value = "real";
+                break;
+            case "Float": value = "real";
+                break;
+            case "float": value = "real";
                 break;
             default:
                 throw new Exception("Error converting field type: "+type);
