@@ -10,7 +10,7 @@ import com.delacrmi.simorm.annotation.Table;
  */
 
 @Table(Name = "RelationshipWriterText")
-public class WriterText extends Entity {
+public class WriterText extends Entity<WriterText> {
 
     @Column(NotNull = true)
     @ManyToOne(ForeingKey = {"id"})

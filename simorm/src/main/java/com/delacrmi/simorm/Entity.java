@@ -33,7 +33,7 @@ import java.util.Vector;
 /**
  * Created by miguel on 09/10/15.
  */
-public class Entity implements Serializable {
+public class Entity<T> implements Serializable {
 
     private EntityProperty property;
     private EntityFilter entityFilter;
@@ -652,15 +652,15 @@ public class Entity implements Serializable {
     }
 
     //region Persistences Methods
-    public synchronized Entity findOnce(EntityFilter filter){
+    public synchronized T findOnce(EntityFilter filter){
         Temporary t = getTemporaryStructure(filter,getName(),getColumnsNameAsString(true),1);
         if(t.next()){
             addValues(t.getRowAt(),true);
         }
-        return this;
+        return (T)this;
     }
 
-    private Entity findOnce(EntityFilter filter, boolean find){
+    private T findOnce(EntityFilter filter, boolean find){
 
         Temporary t = getTemporaryStructure(filter,getName(),getColumnsNameAsString(true),1);
 
@@ -668,20 +668,20 @@ public class Entity implements Serializable {
             addValues(t.getRowAt(),find);
         }
 
-        return this;
+        return (T)this;
     }
 
-    public List<Entity> find(EntityFilter filter){
+    public List<T> find(EntityFilter filter){
         setPropertyTable();
 
-        List<Entity> entities =  new ArrayList();
+        List<T> entities =  new ArrayList();
         Temporary t = getTemporaryStructure(filter,getName(),getColumnsNameAsString(true),0);
 
         while (t.next()){
             try {
                 Entity entity = getClass().newInstance();
                 entity.addValues(t.getRowAt(),true);
-                entities.add(entity);
+                entities.add((T)entity);
             } catch (InstantiationException e) {
                 e.printStackTrace();
             } catch (IllegalAccessException e) {
@@ -714,7 +714,7 @@ public class Entity implements Serializable {
                 arg = filter.getArgumentValue();
             }
 
-            Log.i("SQL",sql+" "+arg.length);
+            Log.i("SQL",sql+(arg != null? " "+arg.length : ""));
 
             Cursor cursor = manager.read().rawQuery(sql,arg);
             if(cursor != null && cursor.moveToFirst()){

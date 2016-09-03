@@ -15,7 +15,7 @@ import java.util.List;
  */
 
 @Table(AfterToCreated = {"setInsert"})
-public class Writer extends Entity {
+public class Writer extends Entity<Writer> {
 
     @Column(PrimaryKey = true,
             AutoIncrement = true)

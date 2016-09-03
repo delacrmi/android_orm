@@ -13,7 +13,7 @@ import java.util.List;
  */
 
 @Table
-public class Text extends Entity {
+public class Text extends Entity<Text> {
 
     @Column(NotNull = true,
             PrimaryKey = true,
