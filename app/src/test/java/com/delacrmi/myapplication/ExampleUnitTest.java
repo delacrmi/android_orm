@@ -60,7 +60,7 @@ public class ExampleUnitTest {
     public void createString() throws  Exception{
 
         assertEquals("Error in the create table string",
-                "CREATE TABLE TEXT(ID INTEGER PRIMARY KEY AUTOINCREMENT, TEXT TEXT NOT NULL)",
+                "CREATE TABLE TEXT(ID INTEGER PRIMARY KEY AUTOINCREMENT, TEXT TEXT NOT NULL, VALUE TEXT)",
                 text.getCreateString());
     }
 

@@ -428,7 +428,8 @@ public class Entity<T> implements Serializable {
         }else if(value.getClass().getSimpleName().equals("Integer") ||
                 value.getClass().getSimpleName().equals("int")) content.put(key, (Integer)value);
         else if(value.getClass().getSimpleName().equals("String")) content.put(key,(String)value);
-        else if(value.getClass().getSimpleName().equals("Long")) content.put(key,(Long)value);
+        else if(value.getClass().getSimpleName().equals("Long") ||
+                value.getClass().getSimpleName().equals("long")) content.put(key,(Long)value);
         else if(value.getClass().getSimpleName().equals("BigDecimal")) content.put(key,((BigDecimal)value).toString());
         else if(value.getClass().getSimpleName().equals("Date")) content.put(key,((Date)value).getTime());
         else{
@@ -483,7 +484,7 @@ public class Entity<T> implements Serializable {
                 @SuppressWarnings("unchecked")
                 Class<? extends Entity> fieldArgClass = (Class<? extends Entity>) fieldArgType;
                 try {
-                    return ((Entity) fieldArgClass.newInstance()).find(null);
+                    return ((Entity) fieldArgClass.newInstance()).find();
                 } catch (InstantiationException e) {
                     e.printStackTrace();
                 } catch (IllegalAccessException e) {
@@ -518,6 +519,8 @@ public class Entity<T> implements Serializable {
                 break;
             case "Long": value = "numeric";
                 break;
+            case "long": value = "numeric";
+                break;
             case "Date": value = "numeric";
                 break;
             case "Double": value = "real";
@@ -539,15 +542,6 @@ public class Entity<T> implements Serializable {
         String [] value = new String[0];
         if(!column.relationshipType.equals("OneToMany") || multi)
             value = column.relationshipColumns;
-            /*if(annotation.annotationType().getSimpleName().equals("OneToOne"))
-                value =((OneToOne)annotation).ForeingKey();
-            else if(annotation.annotationType().getSimpleName().equals("OneToMany")
-                    && multi)
-                value = ((OneToMany)annotation).ForeingKey();
-            else if(annotation.annotationType().getSimpleName().equals("ManyToOne"))
-                value = ((ManyToOne)annotation).ForeingKey();
-            else if(annotation.annotationType().getSimpleName().equals("ManyToMany"))
-                value = ((ManyToMany)annotation).ForeingKey();*/
 
         return value;
     }
@@ -607,8 +601,6 @@ public class Entity<T> implements Serializable {
                 Object o = convertToFieldType(columnName, column.value);
                 if(!property.getRelationshipNames().contains(columnName))
                     setColumn(columnName, o);
-                /*else if (ob != null)
-                    setColumn(columnName, ob);*/
             } catch (NoSuchFieldException e) {
                 Log.d("entityRelationMap",columnName+" "+column.value);
                 entityRelationMap.put(columnName, column.value);
@@ -671,7 +663,7 @@ public class Entity<T> implements Serializable {
         return (T)this;
     }
 
-    public List<T> find(EntityFilter filter){
+    public List<T> find(@NonNull EntityFilter filter){
         setPropertyTable();
 
         List<T> entities =  new ArrayList();
@@ -690,6 +682,27 @@ public class Entity<T> implements Serializable {
 
         }
 
+        return entities;
+    }
+
+    public List<T> find(){
+        setPropertyTable();
+
+        List<T> entities =  new ArrayList();
+        Temporary t = getTemporaryStructure(null,getName(),getColumnsNameAsString(true),0);
+
+        while (t.next()){
+            try {
+                Entity entity = getClass().newInstance();
+                entity.addValues(t.getRowAt(),true);
+                entities.add((T)entity);
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+
+        }
         return entities;
     }
 
@@ -889,7 +902,7 @@ public class Entity<T> implements Serializable {
             if(column.relationshipType == null && !content.containsKey(key) && column.notNull)
                 throw new NullPointerException("Table : "+getName()+" The column "+key+" can't be null");
             else if(column.relationshipType != null){
-                Log.e("Null array",key);
+//                Log.e("Null array",key);
                 for (String key_s : column.relationshipColumns)
                     if (!content.containsKey(key + "_" + key_s.toUpperCase()) && column.notNull)
                         throw new NullPointerException("Table : " + getName() + " The virtual column " + key_s.toUpperCase() + " can't be null");
