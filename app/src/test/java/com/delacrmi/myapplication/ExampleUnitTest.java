@@ -135,4 +135,12 @@ public class ExampleUnitTest {
         assertEquals("The length should be equals",1,filter.getArgumentValue().length);
     }
 
+    @Test
+    public void getDefaultFilter(){
+        user.user = "prueba";
+        filter = user.getDefaultFilter();
+        assertEquals("Filter should be equals to","ID = ? and USER = ?",filter.getWhereValue());
+        assertEquals("The length should be equals",2,filter.getArgumentValue().length);
+    }
+
 }

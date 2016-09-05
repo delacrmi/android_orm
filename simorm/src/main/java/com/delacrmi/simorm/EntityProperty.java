@@ -27,7 +27,7 @@ class EntityProperty {
     private String tableName;
     private String nickName;
     private Map<String,Field> fieldMap = new HashMap();
-    private Map<String,Column> primaryKey = new HashMap();
+    private Map<String,ColumnClass> primaryKey = new HashMap();
     private Map<String, String[]> tableTriggers = new HashMap();
     
     private Map<String,ColumnClass> columns = new HashMap();
@@ -99,7 +99,7 @@ class EntityProperty {
                 
                 fieldMap.put(name, field);
 
-                if(c.PrimaryKey()) primaryKey.put(name, c);
+                //if(c.PrimaryKey()) primaryKey.put(name, c);
 
                 //Adding the annotations properties for field
                 Annotation[] annotations = field.getAnnotations();
@@ -118,6 +118,7 @@ class EntityProperty {
                         relationship.add(name);
                     }
                 columns.put(name,columnClass);
+                if(c.PrimaryKey()) primaryKey.put(name, columnClass);
             }
         }
     }
@@ -133,7 +134,7 @@ class EntityProperty {
 
     public int getColumnCount(){return  columnCount;}
 
-    public Map<String, Column> getPrimaryKeyMap(){ return  primaryKey; }
+    public Map<String, ColumnClass> getPrimaryKeyMap(){ return  primaryKey; }
     public Map<String, String[]> getTableTriggers(){ return tableTriggers; }
 
     public List<String> getRelationshipNames() {

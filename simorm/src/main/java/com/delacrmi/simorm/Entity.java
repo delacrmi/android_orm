@@ -59,6 +59,28 @@ public class Entity<T> implements Serializable {
         return entityFilter;
     }
 
+    public EntityFilter getDefaultFilter(){
+        setPropertyTable();
+        EntityFilter entityFilter = new EntityFilter("?");
+        int size = property.getPrimaryKeyMap().values().size();
+        int count = 1;
+        for(ColumnClass column: property.getPrimaryKeyMap().values()){
+            try{
+                if(size != count){
+                    entityFilter.addArgument(column.name,
+                            getColumnValue(column.name).toString(),null,"and");
+                    count++;
+                }else{
+                    entityFilter.addArgument(column.name,
+                            getColumnValue(column.name).toString());
+                }
+            }catch (NullPointerException npe){
+                throw new NullPointerException("The primary key "+column.name+" is null");
+            }
+        }
+        return size > 0 ? entityFilter : null;
+    }
+
     public void setEntityFilter(EntityFilter entityFilter) {
         this.entityFilter = entityFilter;
     }
@@ -345,7 +367,7 @@ public class Entity<T> implements Serializable {
                     if((i+1) < relationshipArray.length)
                         filter.addArgument(relationshipArray[i],entityRelationMap.get(cn)+"",null,"and");
                     else
-                        filter.addArgument(relationshipArray[i],entityRelationMap.get(cn)+"",null);
+                        filter.addArgument(relationshipArray[i],entityRelationMap.get(cn)+"");
                 }
 
 
@@ -415,8 +437,6 @@ public class Entity<T> implements Serializable {
         Log.e("Column Name",key+" !! "+(column == null));
          if(column != null && (column.notNull || (column.primaryKey && !column.autoIncrement))
                  && value == null) throw new NullPointerException("The column " + key + " can't be null");
-
-
 
         if(value != null) Log.i("Class " + key, value+"");
         if(value != null && value.getClass().getSimpleName().equals("Text"))
@@ -790,9 +810,9 @@ public class Entity<T> implements Serializable {
                 catchNullValuesFromContent(content);
             if(!isSaved) {
                 Long id = manager.write().insert(getName(), null, content);
-                Map<String, Column> pks = property.getPrimaryKeyMap();
+                Map<String, ColumnClass> pks = property.getPrimaryKeyMap();
                 for (String pk : pks.keySet())
-                    if (pks.get(pk).AutoIncrement())
+                    if (pks.get(pk).autoIncrement)
                         try {
                             setColumn(pk, id.intValue());
                         } catch (NoSuchFieldException e) {
@@ -813,9 +833,9 @@ public class Entity<T> implements Serializable {
 
     public synchronized long save(SQLiteDatabase db){
         Long id = db.insert(getName(), null, getContentValues());
-        Map<String,Column> pks = property.getPrimaryKeyMap();
+        Map<String,ColumnClass> pks = property.getPrimaryKeyMap();
         for(String pk : pks.keySet())
-            if(pks.get(pk).AutoIncrement())
+            if(pks.get(pk).autoIncrement)
                 try {
                     setColumn(pk,id.intValue());
                 } catch (NoSuchFieldException e) {
@@ -845,7 +865,7 @@ public class Entity<T> implements Serializable {
     }
 
     public synchronized int update(){
-        return update(getEntityFilter());
+        return update(getDefaultFilter());
     }
 
     public synchronized int  delete(EntityFilter filter){
@@ -865,7 +885,7 @@ public class Entity<T> implements Serializable {
         }
     }
 
-    public synchronized int delete(){return delete(getEntityFilter());}
+    public synchronized int delete(){return delete(getDefaultFilter());}
 
     //endregion
 

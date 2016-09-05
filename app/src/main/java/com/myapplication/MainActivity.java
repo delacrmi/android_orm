@@ -94,9 +94,9 @@ public class MainActivity extends AppCompatActivity {
         writer.date = new Date();*/
         //writer.save();
 
-        text.text = "text 1";
+        /*text.text = "text 1";
         text.value = new BigDecimal("24000.50");
-        text.save();
+        text.save();*/
 
         EntityFilter filter = new EntityFilter("?");
 
@@ -104,13 +104,20 @@ public class MainActivity extends AppCompatActivity {
                 .addArgument("text","t%","like");
         text.findOnce(filter);
 
-        /*text.value = new BigDecimal("24000.2212");
-        text.update();*/
+        text.value = new BigDecimal("24000.2");
+        text.update();
+
+        text.findOnce(filter);
         //writer.findOnce(filter);
         //writer.email = "er1@gmail.com";
         //writer.update();
         //Log.e(writer.toString(),writer.texts+" "+writer.date);
 
+        Log.i(text.toString(),text.id+" "+text.value);
+
+        text.value = new BigDecimal("24000.1");
+        text.update();
+        text.findOnce(filter);
         Log.i(text.toString(),text.id+" "+text.value);
 
         /*writeText.writer = writer;
