@@ -374,8 +374,8 @@ public class Entity<T> implements Serializable {
                 merry = getEntityFromType(field);
                 o = merry.findOnce(filter,false);
 
-            } else if(column.relationshipType.equals("OneToMany")/*annotation instanceof OneToMany*/){
-                Log.e("setEntityColumn","OneToMany");
+            } else /*if(column.relationshipType.equals("OneToMany")*//*annotation instanceof OneToMany)*/{
+                Log.e("setEntityColumn","OneToMany or OneToOne writable = False");
 
                 merry = getEntityFromType(field);
 
@@ -390,9 +390,11 @@ public class Entity<T> implements Serializable {
                         if ((i + 1) < ra.length)
                             filter.addArgument(cr + "_" + cn, getColumnValue(cn) + "", null, "and");
                         else
-                            filter.addArgument(cr + "_" + cn, getColumnValue(cn) + "", null);
+                            filter.addArgument(cr + "_" + cn, getColumnValue(cn) + "");
                     }
-                    o = merry.find(filter);
+
+                    if(field.getType().getSimpleName().equals("List")) o = merry.find(filter);
+                    else o = merry.findOnce(filter,false);
                 }
 
             }
@@ -459,6 +461,10 @@ public class Entity<T> implements Serializable {
                 return;
 
             Entity entity = (Entity) getColumnValue(annotation.name);
+
+            //Auto-saving or updating the relationship entity
+            if(entity.isSaved) entity.update(false);
+            else entity.save(false);
 
             Log.i("table name", entity.getName());
             for(String keys : annotation.relationshipColumns) {
@@ -680,6 +686,19 @@ public class Entity<T> implements Serializable {
             addValues(t.getRowAt(),find);
         }
 
+        isSaved = true;
+
+        return (T)this;
+    }
+
+    public T findByIDs(){
+        Temporary t = getTemporaryStructure(getDefaultFilter(),getName(),getColumnsNameAsString(false),1);
+        if(t.next()){
+            addValues(t.getRowAt(),true);
+        }
+
+        isSaved = true;
+
         return (T)this;
     }
 
@@ -693,6 +712,9 @@ public class Entity<T> implements Serializable {
             try {
                 Entity entity = getClass().newInstance();
                 entity.addValues(t.getRowAt(),true);
+
+                entity.isSaved = true;
+
                 entities.add((T)entity);
             } catch (InstantiationException e) {
                 e.printStackTrace();
@@ -715,6 +737,9 @@ public class Entity<T> implements Serializable {
             try {
                 Entity entity = getClass().newInstance();
                 entity.addValues(t.getRowAt(),true);
+
+                entity.isSaved = true;
+
                 entities.add((T)entity);
             } catch (InstantiationException e) {
                 e.printStackTrace();
@@ -831,6 +856,26 @@ public class Entity<T> implements Serializable {
         }
     }
 
+    private synchronized void save(Boolean close){
+        ContentValues content = getContentValues();
+        if(validateSaving)
+            catchNullValuesFromContent(content);
+        if(!isSaved) {
+            Long id = manager.write().insert(getName(), null, content);
+            Map<String, ColumnClass> pks = property.getPrimaryKeyMap();
+            for (String pk : pks.keySet())
+                if (pks.get(pk).autoIncrement)
+                    try {
+                        setColumn(pk, id.intValue());
+                    } catch (NoSuchFieldException e) {
+                        e.printStackTrace();
+                    } catch (InstantiationException e) {
+                        e.printStackTrace();
+                    }
+            isSaved = true;
+        }
+    }
+
     public synchronized long save(SQLiteDatabase db){
         Long id = db.insert(getName(), null, getContentValues());
         Map<String,ColumnClass> pks = property.getPrimaryKeyMap();
@@ -847,7 +892,7 @@ public class Entity<T> implements Serializable {
         return id;
     }
 
-    public synchronized int  update(EntityFilter filter){
+    public synchronized int update(EntityFilter filter){
 
         String sql = null;
         String[] arg = null;
@@ -862,6 +907,20 @@ public class Entity<T> implements Serializable {
         }finally {
             manager.write().close();
         }
+    }
+
+    public synchronized void update(Boolean close){
+
+        String sql = null;
+        String[] arg = null;
+        Filter filter = getDefaultFilter();
+
+        if(filter != null){
+            sql = filter.getWhereValue().toUpperCase();
+            arg = filter.getArgumentValue();
+        }
+
+        manager.read().update(getName(),getContentValues(),sql,arg);
     }
 
     public synchronized int update(){
