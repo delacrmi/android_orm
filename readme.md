@@ -58,7 +58,7 @@ To define ours data **Tables** just need to extends the **Entity** class and use
 ```java
 //eager
 @Table(AfterToCreated = {"setInsert"})
-public class Writer extends Entity {
+public class Writer extends Entity<Writer> {
 
     @Column(PrimaryKey = true,
             AutoIncrement = true)
@@ -78,7 +78,7 @@ public class Writer extends Entity {
 }
 
 @Table
-public class Text extends Entity {
+public class Text extends Entity<Text> {
 
     @Column(NotNull = true,
             PrimaryKey = true,
@@ -95,7 +95,7 @@ public class Text extends Entity {
 }
 
 @Table(Name = "RelationshipWriterText")
-public class WriterText extends Entity {
+public class WriterText extends Entity<WriterText> {
 
     @Column(NotNull = true)
     @ManyToOne(ForeingKey = {"id"})
@@ -108,7 +108,7 @@ public class WriterText extends Entity {
 
 //Lazy
 @Table(Name = "RelationshipWriterText")
-public class WriterText extends Entity {
+public class WriterText extends Entity<WriterText> {
 
     @Column(NotNull = true)
     @ManyToOne(ForeingKey = {"id"})
@@ -117,8 +117,8 @@ public class WriterText extends Entity {
     @Column(NotNull = true)
     @ManyToOne(ForeingKey = {"id"})
     public int text;
-
-	public Text getWriter(){
+    
+    public Text getWriter(){
     	return new Writer.fineOne(new EntityFilter().addArgument("id",writer+""));
     }
 
