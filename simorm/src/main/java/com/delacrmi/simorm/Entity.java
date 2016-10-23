@@ -8,8 +8,6 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
-import com.delacrmi.simorm.annotation.Column;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -27,6 +25,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.Vector;
 
@@ -44,6 +43,7 @@ public class Entity<T> implements Serializable {
 
     private boolean validateSaving = true;
     private boolean isSaved = false;
+    private boolean fromJSON = false;
 
     public String getNickName() {
         setPropertyTable();
@@ -61,18 +61,27 @@ public class Entity<T> implements Serializable {
 
     public EntityFilter getDefaultFilter(){
         setPropertyTable();
+        /*TODO add the entity as primary key*/
         EntityFilter entityFilter = new EntityFilter("?");
         int size = property.getPrimaryKeyMap().values().size();
         int count = 1;
+        Object value;
         for(ColumnClass column: property.getPrimaryKeyMap().values()){
             try{
+                value = getColumnValue(column.name);
                 if(size != count){
-                    entityFilter.addArgument(column.name,
-                            getColumnValue(column.name).toString(),null,"and");
+                    /*if(column.isEntity)
+                        entityFilter.addArgument(column.name,(Entity)value,"and");
+                    else*/
+                        entityFilter.addArgument(column.name,value.toString(),null,"and");
+
                     count++;
                 }else{
-                    entityFilter.addArgument(column.name,
-                            getColumnValue(column.name).toString());
+
+                    /*if(column.isEntity)
+                        entityFilter.addArgument(column.name,(Entity)value);
+                    else*/
+                        entityFilter.addArgument(column.name,value.toString());
                 }
             }catch (NullPointerException npe){
                 throw new NullPointerException("The primary key "+column.name+" is null");
@@ -164,7 +173,7 @@ public class Entity<T> implements Serializable {
                 throw new Exception("The column " + one + " don't exist in  the relationship table");
             }
 
-            if (column.notNull) columns += " not null";
+            if (column.notNull || column.primaryKey) columns += " not null";
             if(ct < column.relationshipColumns.length){
                 columns  += ",";
                 ct++;
@@ -179,6 +188,7 @@ public class Entity<T> implements Serializable {
         setPropertyTable();
         return property;
     }
+
     public List<String> getPrimariesKeys(){
         setPropertyTable();
         List<String> list = new ArrayList<String>();
@@ -247,47 +257,101 @@ public class Entity<T> implements Serializable {
     public JSONObject getJSON(){
         setPropertyTable();
         JSONObject json = new JSONObject();
+        if(!isSaved) save();
 
         for(String key : property.getColumnsMap().keySet())
             try {
+
                 ColumnClass column = property.getColumn(key);
+                Object o = getColumnValue(key);
+                Log.e(key,o+"");
+                if(o == null) continue;
+
                 if(column.field.getType().getSimpleName().equals("Date")){
                     json.put(key, new SimpleDateFormat(column.dateFormat)
-                            .format((Date)column.field.get(this)));
+                            .format((Date)o));
+                }else if(column.field.getType().getSimpleName().equals("List")){
+
+                    JSONArray jsonArray = null;
+                    Log.i("List getJSon",o+"");
+                    for(Object ent: ((List)o)){
+                        if(jsonArray == null) jsonArray = new JSONArray();
+                        Entity e = (Entity)ent;
+                        if(!e.isSaved) e.save();
+                        jsonArray.put(e.getJSON());
+                    }
+
+                    if(jsonArray != null) json.put(key,jsonArray);
+
+                }else if(column.isEntity){
+                    Entity e = (Entity)o;
+                    if(!e.isSaved) e.save();
+                    json.put(key,e.getJSON());
                 }else
-                    json.put(key,column.field.get(this));
+                    json.put(key,o);
             } catch (JSONException e) {
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
                 e.printStackTrace();
             }
 
         return json;
     }
 
-    public boolean setColumnsFromJSON(@NonNull JSONObject json){
+    /**
+    * @param json <p>instance the entity with this json values</p>
+    * */
+    public T setColumnsFromJSON(@NonNull JSONObject json){
+        setPropertyTable();
+        fromJSON = true;
+        isSaved = true;
         try{
             Iterator iterator = json.keys();
 
             while(iterator.hasNext()){
                 String name = iterator.next().toString();
+                ColumnClass columnClass = property.getColumn(name.toUpperCase());
 
                 try {
-                    addValues(name.toUpperCase(),json.get(name));
+
+                    if(columnClass.isList){
+                        JSONArray jArray = json.getJSONArray(name);
+
+                        List v = new ArrayList();
+                        for (int i = 0; i < jArray.length(); i++) {
+                            JSONObject jOb = jArray.getJSONObject(i);
+
+                            v.add(
+                                    getEntityFromType(columnClass.field)
+                                            .setColumnsFromJSON(jOb));
+                        }
+                        addValues(columnClass.name,v);
+                        Log.i("List name",columnClass.name);
+                        Log.i("List",json.getJSONArray(name).toString());
+                    }else if(columnClass.isEntity){
+                        addValues(columnClass.name,
+                                getEntityFromType(columnClass.field).setColumnsFromJSON(json.getJSONObject(name)));
+                    } else addValues(columnClass.name,json.get(name));
                     //setEntityColumn(this);
+
                 } catch (JSONException e) {
                     resetEntity();
-                    return false;
+                    Log.e("setColumnsFromJSON",e.toString());
+                    return null;
                 }
 
             }
-            return true;
+            return (T)this;
         }catch (NullPointerException e){
             resetEntity();
-            return false;
+            Log.e("setColumnsFromJSON",e.toString());
+            return null;
+        }finally {
+            fromJSON = false;
         }
     }
 
+    /**
+     * @return JSONArray <p>return a columns names in JsonArray</p>
+     * */
     public JSONArray getColumnstoJSONArray(){
         setPropertyTable();
         JSONArray array = new JSONArray();
@@ -346,7 +410,7 @@ public class Entity<T> implements Serializable {
         return filter;
     }
 
-    private void setEntityColumn(Entity entity){
+    private void setEntityColumn(){
         Field field;
         ColumnClass column;
 
@@ -374,7 +438,7 @@ public class Entity<T> implements Serializable {
                 merry = getEntityFromType(field);
                 o = merry.findOnce(filter,false);
 
-            } else /*if(column.relationshipType.equals("OneToMany")*//*annotation instanceof OneToMany)*/{
+            } else{
                 Log.e("setEntityColumn","OneToMany or OneToOne writable = False");
 
                 merry = getEntityFromType(field);
@@ -454,6 +518,8 @@ public class Entity<T> implements Serializable {
                 value.getClass().getSimpleName().equals("long")) content.put(key,(Long)value);
         else if(value.getClass().getSimpleName().equals("BigDecimal")) content.put(key,((BigDecimal)value).toString());
         else if(value.getClass().getSimpleName().equals("Date")) content.put(key,((Date)value).getTime());
+        else if(value.getClass().getSimpleName().equals("boolean") ||
+                value.getClass().getSimpleName().equals("Boolean")) content.put(key,(((Boolean)value? 1:0)));
         else{
 
             ColumnClass annotation = property.getColumn(key);
@@ -557,6 +623,10 @@ public class Entity<T> implements Serializable {
                 break;
             case "float": value = "real";
                 break;
+            case "boolean": value = "integer";
+                break;
+            case "Boolean": value = "integer";
+                break;
             default:
                 throw new Exception("Error converting field type: "+type);
         }
@@ -584,17 +654,28 @@ public class Entity<T> implements Serializable {
                     break;
                 case "int": result = Integer.parseInt(value.toString());
                     break;
+                case "Integer": result = Integer.parseInt(value.toString());
+                    break;
+                case "boolean": result = value.toString().equals("1");
+                    break;
+                case "Boolean": result = value.toString().equals("1");
+                    break;
                 case "BigDecimal": result = new BigDecimal(value.toString());
                     break;
                 case "Long": result = Long.parseLong(value.toString());
                     break;
                 case "Date":
                     dateFormat = new SimpleDateFormat(column.dateFormat);
-                    Date l = new Date();
-                    Log.e("Empty",value.toString().isEmpty()+"");
-                    l.setTime(Long.parseLong(value.toString()));
+                    Date l;
+                    String d;
+                    if(!fromJSON){
+                        l = new Date();
+                        l.setTime(Long.parseLong(value.toString()));
+                        d = dateFormat.format(l);
+                    }else d = value.toString();
 
-                    String d = dateFormat.format(l);
+                    Log.e("Empty",value.toString().isEmpty()+"");
+
                     try{
                         l = dateFormat.parse(d);
                         result = l;
@@ -635,17 +716,18 @@ public class Entity<T> implements Serializable {
             }
         }
         if(find)
-            setEntityColumn(this);
+            setEntityColumn();
     }
 
     private void addValues(String columnName,Object o){
         try {
             Log.d("Add Values",columnName+" value "+o.toString());
-            o = convertToFieldType(columnName, o.toString());
             if(!property.getRelationshipNames().contains(columnName))
+                o = convertToFieldType(columnName, o.toString());
+
                 setColumn(columnName, o);
         } catch (NoSuchFieldException e) {
-            entityRelationMap.put(columnName, o.toString());
+            e.printStackTrace();
         } catch (InstantiationException e){
             e.printStackTrace();
         }
@@ -675,6 +757,9 @@ public class Entity<T> implements Serializable {
         if(t.next()){
             addValues(t.getRowAt(),true);
         }
+
+        isSaved = true;
+
         return (T)this;
     }
 
@@ -991,7 +1076,7 @@ public class Entity<T> implements Serializable {
     }
 
     public Entity refresh(){
-        setEntityColumn(this);
+        setEntityColumn();
         return this;
 
     }

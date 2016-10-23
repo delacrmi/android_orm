@@ -5,6 +5,7 @@ package com.delacrmi.simorm;
  */
 
 import android.support.annotation.Nullable;
+import android.util.Log;
 
 import com.delacrmi.simorm.annotation.Column;
 import com.delacrmi.simorm.annotation.ManyToOne;
@@ -110,7 +111,7 @@ class EntityProperty {
                         columnClass.relationshipType = annotation.annotationType().getSimpleName();
                         columnClass.relationshipColumns = convertRelationshipToString(columnClass.relationshipType,annotation);
 
-                        Class cClass = getEntityClassFromType(field);
+                        Class cClass = getEntityClassFromType(field,columnClass);
                         if(cClass != null && cClass.isInstance(new Entity()))
                             columnClass.isEntity = true;
                         
@@ -151,10 +152,11 @@ class EntityProperty {
     public Class<? extends Entity> getTableClass(){ return tableClass; }
 
     @Nullable
-    public Class<? extends Entity> getEntityClassFromType(Field field){
+    private Class<? extends Entity> getEntityClassFromType(Field field, ColumnClass columnClass){
         Class value = null;
-        
+
         if(field.getType().getSimpleName().equals("List")){
+            columnClass.isList = true;
             Type genericFieldType = field.getGenericType();
             if(genericFieldType instanceof ParameterizedType){
                 ParameterizedType aType = (ParameterizedType) genericFieldType;
@@ -168,7 +170,7 @@ class EntityProperty {
                 }
             }
         }else if (getLastClass(field.getType()) != null) {
-            value = field.getType();
+            value = getLastClass(field.getType());
         }
         return value;
     }

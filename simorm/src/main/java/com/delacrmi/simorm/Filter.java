@@ -1,5 +1,6 @@
 package com.delacrmi.simorm;
 
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import java.util.ArrayList;
@@ -13,7 +14,7 @@ abstract class Filter<Column, Value, Comparison, Condition> {
     private int values = 0;
 
     public Filter<Column, Value, Comparison, Condition>
-        addArgument(Column column, @Nullable Value value, @Nullable Comparison comparison,
+        addArgument(@NonNull Column column, @Nullable Value value, @Nullable Comparison comparison,
                     @Nullable Condition condition){
         WhereCondition cond = new WhereCondition();
 
@@ -26,7 +27,6 @@ abstract class Filter<Column, Value, Comparison, Condition> {
 
         if(value != null)
             values ++;
-
 
         return this;
     }

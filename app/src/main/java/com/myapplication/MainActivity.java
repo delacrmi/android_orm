@@ -23,6 +23,7 @@ import android.widget.TextView;
 import com.delacrmi.myapplication.R;
 
 import com.delacrmi.simorm.ConnectSQLite;
+import com.delacrmi.simorm.Entity;
 import com.delacrmi.simorm.EntityFilter;
 import com.delacrmi.simorm.EntityManager;
 import com.persistences.Text;
@@ -30,6 +31,8 @@ import com.persistences.WriterText;
 import com.persistences.Writer;
 
 import java.math.BigDecimal;
+import java.util.Date;
+import java.util.List;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -85,40 +88,61 @@ public class MainActivity extends AppCompatActivity {
          .addEntity(Text.class)
          .addEntity(WriterText.class).init();
 
-        Writer writer = new Writer();
+        EntityFilter filter = new EntityFilter("?");
         Text text = new Text();
-        //WriterText writeText = new WriterText();
+        filter//.addArgument("user",null,"is not null","and")
+                .addArgument("text","t%","like");
 
+        //text.findOnce(filter);
+
+        Writer writer = new Writer();
+
+        Entity writeText = new WriterText();
         /*writer.user = "Ericka";
         writer.email = "e@gmail.com";
-        writer.date = new Date();*/
+        writer.date = new Date();
+
+        writeText.text = text;
+        writeText.writer = writer;*/
+        //writeText.save();
+
         //writer.save();
 
         /*text.text = "text 1";
         text.value = new BigDecimal("24000.50");
         text.save();*/
 
-        EntityFilter filter = new EntityFilter("?");
+        //text.value = new BigDecimal("24000.2");
+        //text.update();
 
-        filter//.addArgument("user",null,"is not null","and")
-                .addArgument("text","t%","like");
-        text.findOnce(filter);
-
-        text.value = new BigDecimal("24000.2");
-        text.update();
-
-        text.findOnce(filter);
         //writer.findOnce(filter);
         //writer.email = "er1@gmail.com";
         //writer.update();
         //Log.e(writer.toString(),writer.texts+" "+writer.date);
 
-        Log.i(text.toString(),text.id+" "+text.value);
+        for(Writer writer1: writer.find()) {
+            Object o = writer1.getColumnValue("texts");
 
-        text.value = new BigDecimal("24000.1");
+            if(o == null)
+                Log.e("Object null","null null mull");
+            else
+                Log.i(writer1.toString() + " loop", ((Entity)((List)o).get(0)).refresh().getColumnValue("writer")+"");
+
+            //Log.e(writer1.toString()+" JSON",writer1.getJSON().toString());
+            Log.e("JSON created",new Writer().setColumnsFromJSON(writer1.getJSON()).getJSON().toString());
+        }
+
+        /*for(WriterText writerText: new WriterText().find()) {
+            writerText.refresh();
+            Log.e(writerText.toString(), writerText.writer.toString());
+        }*/
+
+       // Log.i(text.toString(),text.id+" "+text.value);
+
+       /* text.value = new BigDecimal("24000.1");
         text.update();
         text.findOnce(filter);
-        Log.i(text.toString(),text.id+" "+text.value);
+        Log.i(text.toString(),text.id+" "+text.value);*/
 
         /*writeText.writer = writer;
         writeText.text = text;

@@ -18,6 +18,8 @@ class ColumnClass {
 
     //know if the column is a entity
     public boolean isEntity = false;
+
+    public boolean isList = false;
     
     //relationship name
     public String relationshipType;
