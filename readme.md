@@ -3,7 +3,7 @@ This open source project is a simple Object Relationship Mapping to Android, tha
 
 ####[Download simorm.jar](https://github.com/delacrmi/android_orm/releases)
 
-####Download from Gradle
+####Download from Gradle [![](https://jitpack.io/v/delacrmi/android_orm.svg)](https://jitpack.io/#delacrmi/android_orm)
 
 #####Add it in your root build.gradle at the end of repositories:
 ```
