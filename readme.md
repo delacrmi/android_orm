@@ -3,6 +3,25 @@ This open source project is a simple Object Relationship Mapping to Android, tha
 
 ####[Download simorm.jar](https://github.com/delacrmi/android_orm/releases)
 
+####Download from Gradle
+
+#####Add it in your root build.gradle at the end of repositories:
+```
+allprojects {
+	repositories {
+		...
+		maven { url 'https://jitpack.io' }
+	}
+}
+```
+
+#####Add the dependency
+```
+dependencies {
+	compile 'com.github.delacrmi:android_orm:v0.0.2-beta'
+}
+```
+
 ##Creating the Data Base
 
 To create a **Data Base** you need to use the **EntityManager** Class.
